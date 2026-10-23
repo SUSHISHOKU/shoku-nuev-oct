@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shoku · Menú</title>
+  <meta name="description" content="Menú digital de Shoku: sushi, rollos, ramen, teppan yaki, bebidas y más.">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" href="img/logo.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+  <!-- ==================== INICIO ==================== -->
+  <section class="home" id="home" aria-label="Inicio">
+    <video class="home__video" id="home-video" autoplay loop muted playsinline preload="auto" poster="img/rollos.webp">
+      <source src="fondo.mp4" type="video/mp4">
+    </video>
+    <div class="home__shade"></div>
+
+    <div class="home__top">
+      <a class="icon-btn" id="ig-link" href="https://www.instagram.com/shoku_tecnologico" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Shoku">
+        <img src="ig.png" alt="" id="ig-icon">
+      </a>
+      <a class="icon-btn" id="tel-link" href="tel:+528717302780" aria-label="Llamar a Shoku">
+        <img src="tel.png" alt="" id="tel-icon">
+      </a>
+    </div>
+
+    <div class="home__center">
+      <img class="home__logo" id="home-logo" src="img/logo.webp" alt="Shoku" hidden>
+      <p class="home__tagline" id="home-tagline"></p>
+      <nav class="home__buttons" id="home-buttons" aria-label="Opciones">
+        <button class="btn btn--primary" id="open-menu" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5m0-13c2-1.5 5-2 8.5-1.5v13c-3.5-.5-6.5 0-8.5 1.5m0-13v13"/></svg>
+          <span id="menu-label">MENÚ</span>
+        </button>
+        <a class="btn" href="https://won.cards/4za" target="_blank" rel="noopener noreferrer">MEMBRESÍA</a>
+        <a class="btn" href="https://g.page/r/CazHEthkIRcjEAE/review" target="_blank" rel="noopener noreferrer">RECOMIÉNDANOS</a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ==================== ANIMACIÓN DEL LIBRO ==================== -->
+  <div class="book-stage" id="book-stage" hidden aria-hidden="true">
+    <div class="book">
+      <div class="book__face book__inside">
+        <img src="img/logo.webp" alt="" class="js-logo">
+        <div class="k" id="book-inner-title">MENÚ</div>
+        <div class="s">Bienvenido</div>
+      </div>
+      <div class="leaf l1"><i></i><i></i></div>
+      <div class="leaf l2"><i></i><i></i></div>
+      <div class="leaf l3"><i></i><i></i></div>
+      <div class="book__cover" id="book-cover">
+        <i><img src="img/logo.webp" alt="" class="js-logo"><b class="t" id="book-title">MENÚ</b></i>
+        <i></i>
+      </div>
+    </div>
+    <p class="book-stage__hint">Toca para continuar</p>
+  </div>
+
+  <!-- ==================== MENÚ ==================== -->
+  <div class="menu" id="menu" hidden>
+    <div class="menu__bg" id="menu-bg"></div>
+    <header class="menu__header">
+      <button class="back-btn" id="back-home" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Inicio
+      </button>
+      <img class="menu__logo js-logo" src="img/logo.webp" alt="Shoku">
+      <span></span>
+    </header>
+    <main class="menu__main">
+      <div class="menu__title">
+        <h1 id="menu-title">MENÚ</h1>
+        <div class="ornament" aria-hidden="true"><span></span></div>
+      </div>
+      <div class="cards" id="cards"><p class="loading">Cargando menú…</p></div>
+      <footer class="menu__footer">
+        <p id="menu-disclaimer"></p>
+        <div class="menu__social" id="menu-social"></div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ==================== SECCIÓN ==================== -->
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet__panel" id="sheet-panel">
+      <div class="sheet__bar">
+        <h2 id="sheet-title"></h2>
+        <button class="close-btn" id="sheet-close" type="button" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="sheet__body" id="sheet-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel · Shoku</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" href="img/logo.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- ==================== LOGIN ==================== -->
+  <main class="login" id="login-view" hidden>
+    <form class="login__card" id="login-form" autocomplete="on">
+      <img src="img/logo.webp" alt="Shoku" class="login__logo">
+      <h1>Panel de administración</h1>
+      <label class="field">
+        <span>Usuario</span>
+        <input id="login-user" name="username" autocomplete="username" required autocapitalize="none" spellcheck="false">
+      </label>
+      <label class="field">
+        <span>Contraseña</span>
+        <div class="pw">
+          <input id="login-pass" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="pw__toggle" id="pw-toggle" aria-label="Mostrar contraseña">Ver</button>
+        </div>
+      </label>
+      <p class="login__error" id="login-error" role="alert"></p>
+      <button class="btn btn--primary btn--block" id="login-btn" type="submit">Entrar</button>
+      <a class="login__back" href="index.html">← Volver al sitio</a>
+    </form>
+  </main>
+
+  <!-- ==================== PANEL ==================== -->
+  <div class="app" id="app-view" hidden>
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="nav-toggle" type="button" aria-label="Abrir navegación">☰</button>
+      <div class="topbar__brand"><img src="img/logo.webp" alt=""><span>Panel</span></div>
+      <span class="status" id="status"></span>
+      <div class="topbar__actions">
+        <a class="btn btn--ghost" href="index.html" target="_blank" rel="noopener">Ver sitio</a>
+        <button class="btn btn--primary" id="publish-btn" type="button" disabled>Publicar cambios</button>
+        <button class="btn btn--ghost" id="logout-btn" type="button">Salir</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <label class="search">
+          <span class="sr-only">Buscar platillo</span>
+          <input id="search" type="search" placeholder="Buscar platillo o precio…" autocomplete="off">
+        </label>
+        <p class="sidebar__label">Secciones del menú</p>
+        <ol class="nav-list" id="section-list"></ol>
+        <button class="btn btn--ghost btn--block btn--sm" id="add-section" type="button">+ Nueva sección</button>
+        <p class="sidebar__label">Sitio</p>
+        <ul class="nav-list">
+          <li><button type="button" data-view="home">Inicio, botones y enlaces</button></li>
+          <li><button type="button" data-view="look">Apariencia y fondo</button></li>
+          <li><button type="button" data-view="backup">Respaldo</button></li>
+        </ul>
+      </aside>
+      <main class="editor" id="editor"></main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="file-input" hidden>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

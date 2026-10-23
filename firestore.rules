@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Reglas de Firestore para el menú de Shoku.
+// Cualquiera puede LEER el menú; solo la cuenta del panel puede ESCRIBIR.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'shoku@shoku-bb26b.firebaseapp.com';
+    }
+
+    // Documento único con todo el contenido del sitio (site/menu).
+    match /site/{docId} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && docId == 'menu'
+        && request.resource.data.sections is list
+        && request.resource.data.settings is map;
+    }
+
+    // Fotos subidas desde el panel cuando Firebase Storage no está activo.
+    match /media/{mediaId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 1000000
+        && request.resource.data.data.matches('data:image/.*');
+      allow delete: if isAdmin();
+    }
+
+    // Todo lo demás, cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
