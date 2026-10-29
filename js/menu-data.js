@@ -22,7 +22,7 @@ export const DEFAULT_DATA = {
       showLogo: false,
       menuLabel: 'MENÚ',
       buttons: [
-        { label: 'MEMBRESÍA', url: 'https://won.cards/4za', visible: true },
+        { label: 'MEMBRESÍA', url: 'membresia.html', visible: true },
         { label: 'RECOMIÉNDANOS', url: 'https://g.page/r/CazHEthkIRcjEAE/review', visible: true }
       ],
       instagram: { url: 'https://www.instagram.com/shoku_tecnologico', icon: 'ig.png', visible: true },

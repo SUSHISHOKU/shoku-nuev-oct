@@ -1,10 +1,13 @@
 import { DEFAULT_DATA } from './menu-data.js';
-import { app, db, MENU_DOC, MEDIA_COLLECTION, MEDIA_PREFIX, usernameToEmail, resolveMedia } from './firebase.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { app, db, MENU_DOC, MEDIA_COLLECTION, MEDIA_PREFIX, USE_EMULATOR, usernameToEmail, resolveMedia } from './firebase.js';
+import { getAuth, connectAuthEmulator, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { safeUrl, formatPrice, normalizeData, slugify } from './util.js';
+import { safeUrl, formatPrice, normalizeData, slugify, deepMerge } from './util.js';
+import { DEFAULT_LOYALTY } from './loyalty-card.js';
+import { createLoyalty } from './admin-loyalty.js';
 
 const auth = getAuth(app);
+if (USE_EMULATOR) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
 const $ = (s) => document.querySelector(s);
 
 // Imágenes incluidas en el sitio, para elegirlas sin tener que subirlas.
@@ -19,6 +22,9 @@ let savedJSON = '';
 let meta = {};
 let view = { type: 'section', id: null };
 let storageOk = null;
+let loy = null; // configuración de la tarjeta de fidelidad (site/loyalty)
+let savedLoyJSON = '';
+let loyalty = null;
 
 /* ==================== Utilidades de interfaz ==================== */
 
@@ -85,7 +91,9 @@ function toast(msg, type = '') {
 
 /* ==================== Estado y guardado ==================== */
 
-const isDirty = () => data && JSON.stringify(data) !== savedJSON;
+const menuDirty = () => data && JSON.stringify(data) !== savedJSON;
+const loyDirty = () => loy && JSON.stringify(loy) !== savedLoyJSON;
+const isDirty = () => menuDirty() || loyDirty();
 function changed() {
   const dirty = isDirty();
   $('#publish-btn').disabled = !dirty;
@@ -111,6 +119,15 @@ async function loadData() {
   data = normalizeData(DEFAULT_DATA, remote);
   savedJSON = remote ? JSON.stringify(data) : '';
   meta.isNew = !remote;
+
+  let remoteLoy = null;
+  try {
+    const snap = await getDoc(doc(db, 'site', 'loyalty'));
+    remoteLoy = snap.exists() ? snap.data() : null;
+  } catch { /* se usa la configuración por defecto */ }
+  if (remoteLoy) { delete remoteLoy.updatedAt; delete remoteLoy.updatedBy; }
+  loy = deepMerge(DEFAULT_LOYALTY, remoteLoy || {});
+  savedLoyJSON = remoteLoy ? JSON.stringify(loy) : '';
   view = { type: 'section', id: data.sections[0]?.id };
   render();
   changed();
@@ -119,6 +136,7 @@ async function loadData() {
 async function publish() {
   const btn = $('#publish-btn');
   const json = JSON.stringify(data);
+  const loyJson = JSON.stringify(loy);
   if (new Blob([json]).size > 950_000) {
     toast('El menú es demasiado grande para guardarse. Revisa que no haya fotos pegadas como texto.', 'error');
     return;
@@ -126,8 +144,15 @@ async function publish() {
   btn.disabled = true;
   btn.textContent = 'Publicando…';
   try {
-    await setDoc(doc(db, ...MENU_DOC), { ...JSON.parse(json), updatedAt: serverTimestamp(), updatedBy: auth.currentUser?.email || '' });
-    savedJSON = json;
+    const stamp = { updatedAt: serverTimestamp(), updatedBy: auth.currentUser?.email || '' };
+    if (json !== savedJSON) {
+      await setDoc(doc(db, ...MENU_DOC), { ...JSON.parse(json), ...stamp });
+      savedJSON = json;
+    }
+    if (loyJson !== savedLoyJSON) {
+      await setDoc(doc(db, 'site', 'loyalty'), { ...JSON.parse(loyJson), ...stamp });
+      savedLoyJSON = loyJson;
+    }
     meta = { updatedAt: new Date(), updatedBy: auth.currentUser?.email, isNew: false };
     toast('¡Cambios publicados! Ya se ven en el sitio.', 'ok');
     if (view.type === 'backup') render();
@@ -317,6 +342,7 @@ function render() {
   else if (view.type === 'home') content = renderHome();
   else if (view.type === 'look') content = renderLook();
   else if (view.type === 'backup') content = renderBackup();
+  else if (view.type.startsWith('loy-')) content = loyalty.renderView(view);
   else {
     const s = data.sections.find((x) => x.id === view.id) || data.sections[0];
     if (s) view.id = s.id;
@@ -593,6 +619,7 @@ $('#publish-btn').addEventListener('click', publish);
 $('#logout-btn').addEventListener('click', async () => {
   if (isDirty() && !confirm('Tienes cambios sin publicar. ¿Salir de todos modos?')) return;
   savedJSON = JSON.stringify(data);
+  savedLoyJSON = JSON.stringify(loy);
   await signOut(auth);
 });
 $('#add-section').addEventListener('click', () => {
@@ -622,6 +649,12 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (isDirty()) publish();
   }
+});
+
+loyalty = createLoyalty({
+  h, bound, field, toggle, iconBtn, toast, picker, changed, render, go,
+  getLoy: () => loy,
+  userEmail: () => auth.currentUser?.email || ''
 });
 
 onAuthStateChanged(auth, (user) => {

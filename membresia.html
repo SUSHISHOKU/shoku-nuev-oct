@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shoku Club · Membresía</title>
+  <meta name="description" content="Tu tarjeta de fidelidad de Shoku: junta sellos y gana recompensas.">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" href="img/logo.webp" type="image/webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css">
+  <link rel="stylesheet" href="css/card.css">
+  <link rel="stylesheet" href="css/membresia.css">
+</head>
+<body class="mb">
+  <header class="mb__bar">
+    <a class="back-btn" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      Inicio
+    </a>
+    <img class="menu__logo" src="img/logo.webp" alt="Shoku" id="bar-logo">
+    <span></span>
+  </header>
+
+  <main class="mb__main">
+    <section class="mb__hero">
+      <p class="mb__eyebrow" id="program-name">SHOKU CLUB</p>
+      <h1 id="headline">Junta tus sellos y llévate un rollo gratis</h1>
+      <div class="ornament" aria-hidden="true"><span></span></div>
+    </section>
+
+    <div class="mb__card" id="card-slot"></div>
+
+    <!-- Registro -->
+    <section class="mb__panel" id="signup" hidden>
+      <h2>Crea tu tarjeta</h2>
+      <p class="mb__muted">Es gratis y tarda 30 segundos.</p>
+      <form id="signup-form" novalidate>
+        <label class="mb__field">
+          <span>Nombre completo</span>
+          <input name="name" autocomplete="name" required maxlength="70" placeholder="Ej. Ana López">
+        </label>
+        <label class="mb__field">
+          <span>Teléfono (10 dígitos)</span>
+          <input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" required placeholder="871 123 4567">
+        </label>
+        <div class="mb__row">
+          <label class="mb__field">
+            <span>Cumpleaños</span>
+            <input name="birthday" type="date" required>
+          </label>
+          <label class="mb__field">
+            <span>Correo</span>
+            <input name="email" type="email" autocomplete="email" required placeholder="tu@correo.com">
+          </label>
+        </div>
+        <label class="mb__consent">
+          <input type="checkbox" name="consent" required>
+          <span id="privacy-text">Acepto el aviso de privacidad.</span>
+        </label>
+        <p class="mb__error" id="signup-error" role="alert"></p>
+        <button class="btn btn--primary mb__submit" type="submit" id="signup-btn">Obtener mi tarjeta</button>
+      </form>
+    </section>
+
+    <!-- Tarjeta ya creada -->
+    <section class="mb__panel" id="mine" hidden>
+      <div class="mb__wallet" id="wallet-buttons"></div>
+      <p class="mb__muted mb__center" id="wallet-note"></p>
+      <div class="mb__actions">
+        <button class="btn" type="button" id="copy-link">Copiar enlace de mi tarjeta</button>
+      </div>
+      <p class="mb__muted mb__center mb__small">Muestra el código QR en caja en cada visita para sumar tu sello.</p>
+      <button class="mb__link" type="button" id="not-me">¿No es tu tarjeta? Registrar otra</button>
+    </section>
+
+    <section class="mb__promos" id="promos" hidden>
+      <h2>Promociones</h2>
+      <div id="promo-list"></div>
+    </section>
+
+    <p class="mb__terms" id="terms"></p>
+  </main>
+
+  <div class="toast-lite" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/membresia.js"></script>
+</body>
+</html>

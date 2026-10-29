@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/card.css">
   <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
@@ -58,6 +59,14 @@
         <p class="sidebar__label">Secciones del menú</p>
         <ol class="nav-list" id="section-list"></ol>
         <button class="btn btn--ghost btn--block btn--sm" id="add-section" type="button">+ Nueva sección</button>
+        <p class="sidebar__label">Tarjeta de fidelidad</p>
+        <ul class="nav-list">
+          <li><button type="button" data-view="loy-visit">📷 Registrar visita</button></li>
+          <li><button type="button" data-view="loy-customers">Clientes</button></li>
+          <li><button type="button" data-view="loy-reports">Reportes</button></li>
+          <li><button type="button" data-view="loy-design">Diseño de la tarjeta</button></li>
+          <li><button type="button" data-view="loy-promos">Promociones y mensajes</button></li>
+        </ul>
         <p class="sidebar__label">Sitio</p>
         <ul class="nav-list">
           <li><button type="button" data-view="home">Inicio, botones y enlaces</button></li>

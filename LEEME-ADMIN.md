@@ -29,11 +29,12 @@ correo automáticamente).
 **Authentication** → **Settings** → **User actions** → desmarca
 **Enable create (sign-up)** → Guardar.
 
-### 4. Reglas de seguridad de Firestore (importante)
+### 4. Reglas de seguridad de Firestore (importante — vuelve a pegarlas si ya lo habías hecho, cambiaron)
 **Firestore Database** → pestaña **Reglas** → borra lo que haya, pega el contenido de
 `firestore.rules` → **Publicar**.
 
-Así cualquiera puede *ver* el menú, pero solo la cuenta del panel puede *modificarlo*.
+Así cualquiera puede *ver* el menú, los clientes solo pueden *crear* su propia tarjeta, y solo la
+cuenta del panel puede ver datos de clientes, dar sellos o modificar el sitio.
 (Si la base estaba en "modo de prueba", cualquier persona podía escribir en ella.)
 
 ### 5. (Opcional) Firebase Storage para fotos y videos grandes
@@ -67,12 +68,41 @@ lee el menú desde Firebase.
 - Si el sitio no muestra un cambio, recarga la página: el teléfono guarda una copia
   para abrir más rápido y se actualiza sola en segundos.
 
+## Tarjeta de fidelidad (Shoku Club)
+
+El botón **MEMBRESÍA** del inicio abre `membresia.html`: el cliente escribe su nombre, teléfono,
+cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actualiza sola cuando le das un sello.
+
+| Quiero… | Dónde (panel → Tarjeta de fidelidad) |
+| --- | --- |
+| Dar un sello o entregar la recompensa | **Registrar visita** → *Escanear tarjeta* (cámara del celular) o busca por teléfono. |
+| Ver todos los clientes / descargar Excel | **Clientes**. |
+| Ver visitas, cumpleaños del mes, clientes frecuentes e inactivos | **Reportes**. |
+| Cambiar logo, colores, fondo, tipo de sello (sushi, estrella, emoji o PNG), número de sellos y recompensa | **Diseño de la tarjeta**. |
+| Agregar promociones y configurar los mensajes automáticos | **Promociones y mensajes**. |
+
+- Cada vez que se completan los sellos, la tarjeta vuelve a 0 y se acumula una recompensa para canjear.
+- Si das dos sellos al mismo cliente en menos de 3 horas, el panel te pide confirmar.
+- Para escanear con la cámara, el sitio debe abrirse con `https://`.
+- **Apple Wallet / Google Wallet:** se conectan en un segundo paso con tus certificados (ver abajo).
+  Mientras tanto los clientes usan su tarjeta digital desde la página de Membresía.
+
+### Pendiente: conectar Apple Wallet y Google Wallet
+Se necesita el plan **Blaze** de Firebase y estos datos (guarda los archivos privados en una carpeta
+`secretos/` **fuera** de `public`, nunca en el repositorio):
+- **Apple:** Team ID, Pass Type ID (ej. `pass.com.shoku.club`) y el certificado **.p12** con su contraseña.
+- **Google:** Issuer ID de Google Wallet y el archivo **.json** de la cuenta de servicio.
+
+Los avisos por cercanía funcionan dentro del radio que deciden Apple y Google (≈100 m en iPhone);
+no es posible un radio de 5–10 km con tarjetas de Wallet.
+
 ## Archivos
 
 | Archivo | Para qué sirve |
 | --- | --- |
 | `index.html` | Inicio con video + libro animado + menú por secciones. |
 | `admin.html` | Panel de administración. |
+| `membresia.html` | Registro de clientes y tarjeta de fidelidad digital. |
 | `menu.html`, `meny.html` | Redirigen al menú nuevo (por si hay QR impresos con esas direcciones). |
 | `js/menu-data.js` | Menú por defecto (el del PDF). |
 | `img/` | Fotos optimizadas (WebP), ~2.5 MB en total en lugar de ~40 MB. |

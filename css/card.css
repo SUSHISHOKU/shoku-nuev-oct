@@ -1,0 +1,71 @@
+/* Tarjeta de fidelidad (estilo Apple/Google Wallet). Se comparte entre membresia.html y admin.html. */
+.lc {
+  --lc-bg: #121214; --lc-fg: #f5f1ea; --lc-label: #c9a45c; --lc-accent: #c9a45c;
+  position: relative; isolation: isolate;
+  width: 100%; max-width: 360px; margin: 0 auto;
+  padding: 18px 18px 20px; border-radius: 20px; overflow: hidden;
+  color: var(--lc-fg); background: var(--lc-bg);
+  font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 24px 50px rgba(0,0,0,.45);
+}
+.lc::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.08), transparent 38%),
+    radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--lc-accent) 22%, transparent), transparent 55%);
+}
+.lc.has-image::before {
+  background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65)), var(--lc-img) center / cover no-repeat;
+}
+/* Patrón de olas japonesas (seigaiha) muy sutil */
+.lc.has-pattern::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; opacity: .07; pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 100%, transparent 9px, var(--lc-accent) 10px, transparent 11px, transparent 15px, var(--lc-accent) 16px, transparent 17px) 0 0 / 34px 17px,
+    radial-gradient(circle at 50% 100%, transparent 9px, var(--lc-accent) 10px, transparent 11px, transparent 15px, var(--lc-accent) 16px, transparent 17px) 17px 8.5px / 34px 17px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 70%); mask-image: linear-gradient(180deg, #000, transparent 70%);
+}
+.lc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
+.lc-logo { height: 30px; width: auto; max-width: 60%; object-fit: contain; }
+.lc-logo-text { font-weight: 600; letter-spacing: .12em; }
+.lc-program { margin: 6px 0 14px; font-size: .66rem; letter-spacing: .32em; color: var(--lc-label); }
+.lc-field span { display: block; font-size: .58rem; letter-spacing: .2em; color: var(--lc-label); margin-bottom: 2px; }
+.lc-field strong { display: block; font-weight: 500; font-size: 1rem; line-height: 1.25; }
+.lc-field--right { text-align: right; }
+.lc-top .lc-field strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+
+.lc-strip {
+  display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 10px;
+  padding: 16px 14px; border-radius: 16px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.lc-stamp {
+  aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1.5px dashed color-mix(in srgb, var(--lc-fg) 28%, transparent);
+  color: color-mix(in srgb, var(--lc-fg) 35%, transparent);
+  font-size: .72rem;
+  transition: transform .3s ease;
+}
+.lc-stamp b { font-weight: 500; }
+.lc-stamp.is-on {
+  border: 1.5px solid var(--lc-accent);
+  background: color-mix(in srgb, var(--lc-accent) 16%, transparent);
+  color: var(--lc-accent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--lc-accent) 35%, transparent);
+}
+.lc-stamp svg, .lc-stamp img { width: 76%; height: 76%; object-fit: contain; }
+.lc-emoji { font-size: clamp(1rem, 6vw, 1.45rem); line-height: 1; }
+.lc-reward {
+  margin-top: 12px; padding: 9px 12px; border-radius: 12px; text-align: center;
+  background: var(--lc-accent); color: #141414; font-weight: 600; font-size: .85rem;
+}
+.lc-fields { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.lc-fields .lc-field { min-width: 0; }
+.lc-fields .lc-field strong { font-size: .92rem; overflow-wrap: anywhere; }
+.lc-qr { margin-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lc-qr__box { width: 132px; padding: 10px; border-radius: 12px; background: #fff; }
+.lc-qr__box svg { display: block; width: 100%; height: auto; }
+.lc-qr__ph { aspect-ratio: 1; border-radius: 4px; background: conic-gradient(#151515 25%, #fff 0 50%, #151515 0 75%, #fff 0) 0 0 / 16px 16px; opacity: .85; }
+.lc-qr small { font-size: .62rem; letter-spacing: .18em; color: color-mix(in srgb, var(--lc-fg) 60%, transparent); }

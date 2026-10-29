@@ -2,7 +2,7 @@
 // La apiKey de Firebase web es pública por diseño: la seguridad real está en las reglas
 // de Firestore/Storage (ver firestore.rules y storage.rules).
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, connectFirestoreEmulator, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 export const firebaseConfig = {
   apiKey: 'AIzaSyB6Bs3CFmiz1FUd0hMQWwpk-s5p-AoVu5c',
@@ -18,8 +18,19 @@ export const firebaseConfig = {
 export const ADMIN_DOMAIN = 'shoku-bb26b.firebaseapp.com';
 export const usernameToEmail = (u) => (u.includes('@') ? u : `${u}@${ADMIN_DOMAIN}`).trim().toLowerCase();
 
-export const app = initializeApp(firebaseConfig);
+// Modo de pruebas: solo en localhost y abriendo una página con "?emulador" usa el emulador local de Firebase,
+// para probar sin tocar los datos reales.
+const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+export const USE_EMULATOR = isLocal && (() => {
+  try {
+    if (new URLSearchParams(location.search).has('emulador')) sessionStorage.setItem('shoku-emulador', '1');
+    return sessionStorage.getItem('shoku-emulador') === '1';
+  } catch { return false; }
+})();
+
+export const app = initializeApp(USE_EMULATOR ? { ...firebaseConfig, projectId: 'demo-shoku' } : firebaseConfig);
 export const db = getFirestore(app);
+if (USE_EMULATOR) connectFirestoreEmulator(db, '127.0.0.1', 8080);
 
 // Documento único con todo el contenido del sitio.
 export const MENU_DOC = ['site', 'menu'];
