@@ -17,7 +17,8 @@
       "functions/**",
       "wallet-server/**",
       "secretos/**",
-      "public/**"
+      "public/**",
+      "functions-ai/**"
     ],
     "headers": [
       {
@@ -40,13 +41,29 @@
       }
     ]
   },
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs22",
-    "ignore": [
-      "node_modules",
-      ".secret.local",
-      "*.log"
-    ]
-  }
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        ".secret.local",
+        "*.log"
+      ],
+      "predeploy": [
+        "node \"$RESOURCE_DIR/sync-shared.cjs\""
+      ],
+      "codebase": "default"
+    },
+    {
+      "source": "functions-ai",
+      "codebase": "ai",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        ".secret.local",
+        "*.log"
+      ]
+    }
+  ]
 }

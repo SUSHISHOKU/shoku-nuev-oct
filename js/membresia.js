@@ -1,4 +1,4 @@
-import { db, resolveMedia } from './firebase.js';
+import { db, resolveMedia, WALLET_API } from './firebase.js';
 import { doc, getDoc, collection, writeBatch, onSnapshot, serverTimestamp, Timestamp, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { DEFAULT_LOYALTY, renderCard, hydrateCard, qrSvg, normalizePhone, firstName, welcomeOf, computeExpiry, headlineText, isExpired } from './loyalty-card.js';
 import { esc, safeUrl, deepMerge } from './util.js';
@@ -185,13 +185,13 @@ const GOOGLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4"
 
 function renderWallet(id) {
   const w = cfg.wallet || {};
-  const base = safeUrl(w.apiBase).replace(/\/$/, '');
+  const base = WALLET_API;
   const ua = navigator.userAgent;
   const isApple = /iPhone|iPad|iPod|Macintosh/.test(ua);
   const isAndroid = /Android/.test(ua);
   const buttons = [];
-  if (base && w.apple && !isAndroid) buttons.push(`<a class="wallet-btn" href="${esc(`${base}/applePass?c=${encodeURIComponent(id)}`)}">${APPLE} Agregar a Apple Wallet</a>`);
-  if (base && w.google && !isApple) buttons.push(`<a class="wallet-btn" href="${esc(`${base}/googlePass?c=${encodeURIComponent(id)}`)}" target="_blank" rel="noopener">${GOOGLE} Agregar a Google Wallet</a>`);
+  if (!w.appleOff && !isAndroid) buttons.push(`<a class="wallet-btn" href="${esc(`${base}/applePass?c=${encodeURIComponent(id)}`)}">${APPLE} Agregar a Apple Wallet</a>`);
+  if (!w.googleOff && !isApple) buttons.push(`<a class="wallet-btn" href="${esc(`${base}/googlePass?c=${encodeURIComponent(id)}`)}" target="_blank" rel="noopener">${GOOGLE} Agregar a Google Wallet</a>`);
   $('#wallet-buttons').innerHTML = buttons.join('');
   $('#wallet-note').textContent = buttons.length
     ? 'Agrégala a tu Wallet y recibe avisos de tus sellos y promociones.'

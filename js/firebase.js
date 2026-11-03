@@ -33,6 +33,9 @@ export const app = initializeApp(USE_EMULATOR ? { ...firebaseConfig, projectId: 
 export const db = getFirestore(app);
 if (USE_EMULATOR) connectFirestoreEmulator(db, '127.0.0.1', 8080);
 
+// Servidor de Wallet (Cloud Functions de este proyecto).
+export const WALLET_API = USE_EMULATOR ? 'http://127.0.0.1:5101/demo-shoku/us-central1/wallet' : 'https://us-central1-shoku-4696b.cloudfunctions.net/wallet';
+
 // Documento único con todo el contenido del sitio.
 export const MENU_DOC = ['site', 'menu'];
 // Colección donde se guardan las fotos subidas cuando Firebase Storage no está disponible.

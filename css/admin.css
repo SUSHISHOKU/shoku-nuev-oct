@@ -258,3 +258,9 @@ dialog.scan { width: min(94vw, 460px); }
 .strategy ul { margin: 0 0 8px 18px; line-height: 1.6; font-size: .92rem; }
 .strategy small { color: var(--gold); font-size: .78rem; }
 select { color-scheme: dark; }
+
+/* ==================== App web ==================== */
+.topbar { padding-top: max(10px, env(safe-area-inset-top)); }
+.install-steps { margin: 0 0 16px 20px; line-height: 1.9; }
+@media (max-width: 860px) { .sidebar { padding-top: max(16px, env(safe-area-inset-top)); } }
+@media (display-mode: standalone) { #install-app, #install-app-login { display: none !important; } }

@@ -544,12 +544,10 @@ export function createLoyalty(ctx) {
         toast('Ubicación del negocio guardada (recuerda publicar).', 'ok');
       }, () => toast('No se pudo obtener la ubicación. Escríbela a mano.', 'error'), { enableHighAccuracy: true });
     };
-    const walletReady = loy.wallet.apiBase && (loy.wallet.apple || loy.wallet.google);
 
     return [
       h('h2', { text: 'Promociones y mensajes' }),
       h('p', { class: 'lead', text: 'Las promociones activas se ven en la página de Membresía y se pueden usar en los mensajes con {promo}.' }),
-      walletReady ? null : h('div', { class: 'notice', text: 'Los mensajes automáticos (sellos, inactividad, cumpleaños y cercanía) se enviarán al Wallet del cliente en cuanto conectemos tus certificados de Apple y Google. Ya puedes dejarlos configurados.' }),
       h('section', { class: 'card' },
         h('div', { class: 'card__head' }, h('h3', { text: 'Promociones' })),
         loy.promotions.map((p, i) => h('div', { class: 'promo-row' },
@@ -592,11 +590,8 @@ export function createLoyalty(ctx) {
           n.location.lat && n.location.lng ? h('a', { class: 'btn btn--sm btn--ghost', target: '_blank', rel: 'noopener', href: `https://www.google.com/maps?q=${encodeURIComponent(`${n.location.lat},${n.location.lng}`)}` }, 'Ver en el mapa') : null),
         msg(n.location, 'message', 'Mensaje')),
       h('section', { class: 'card' },
-        h('div', { class: 'card__head' }, h('h3', { text: 'Conexión con Apple y Google Wallet' }),
-          h('span', { class: `pill ${walletReady ? 'pill--sello' : 'pill--ajuste'}`, text: walletReady ? 'Conectado' : 'Pendiente' })),
-        h('p', { class: 'muted', style: 'margin-bottom:12px;line-height:1.5', text: 'Esta parte la configuramos juntos cuando tengas los certificados de Apple y la cuenta de Google Wallet. Mientras tanto, los clientes usan su tarjeta digital desde la página de Membresía.' }),
-        field('Dirección del servidor de Wallet', bound(loy.wallet, 'apiBase', { type: 'url', placeholder: 'https://us-central1-shoku-4696b.cloudfunctions.net/wallet' })),
-        h('div', { class: 'row', style: 'margin-top:12px' }, toggle(loy.wallet, 'apple', 'Apple Wallet'), toggle(loy.wallet, 'google', 'Google Wallet')))
+        h('div', { class: 'card__head' }, h('h3', { text: 'Botones de Wallet en la página de Membresía' })),
+        h('div', { class: 'row' }, toggle(loy.wallet, 'appleOff', 'Apple Wallet', { invert: true }), toggle(loy.wallet, 'googleOff', 'Google Wallet', { invert: true })))
     ];
   }
 

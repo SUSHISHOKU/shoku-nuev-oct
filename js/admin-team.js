@@ -134,7 +134,6 @@ export function createTeam(ctx) {
   /* ==================== Notificaciones ==================== */
 
   function renderNotify() {
-    const walletReady = !!getLoy().wallet?.notifyReady;
     const form = { title: '', message: '', audience: 'all' };
     const countEl = h('p', { class: 'muted', text: 'Calculando destinatarios…' });
     const historyEl = h('div', {}, h('p', { class: 'empty', text: 'Cargando…' }));
@@ -156,7 +155,7 @@ export function createTeam(ctx) {
           const b = d.data();
           return h('div', { class: 'insight' },
             h('strong', { text: b.title || 'Aviso' }), b.message, h('br'),
-            h('small', { class: 'muted', text: `${fmt(toDate(b.createdAt))} · ${AUDIENCES.find((a) => a.key === b.audience)?.label || ''} · ${b.recipients ?? 0} persona(s) · ${b.by || ''}` }));
+            h('small', { class: 'muted', text: `${fmt(toDate(b.createdAt))} · ${AUDIENCES.find((a) => a.key === b.audience)?.label || ''} · ${b.recipients ?? 0} persona(s)${b.walletStatus === 'enviado' ? ` · al teléfono: ${(b.appleSent || 0) + (b.googleSent || 0)}` : ''} · ${b.by || ''}` }));
         })));
     };
     paintHistory().catch((err) => historyEl.replaceChildren(h('p', { class: 'empty', text: err.message })));
@@ -189,7 +188,7 @@ export function createTeam(ctx) {
     return [
       h('h2', { text: 'Notificaciones' }),
       h('p', { class: 'lead', text: 'Escribe un aviso y mándalo a quienes tienen tu tarjeta.' }),
-      walletReady ? null : h('div', { class: 'notice', text: 'Por ahora el aviso aparece al instante en la página de la tarjeta del cliente. Para que también llegue a la pantalla de bloqueo del teléfono falta publicar el servidor de Wallet; los avisos que mandes hoy no se reenviarán.' }),
+      h('p', { class: 'muted', style: 'margin-bottom:14px;line-height:1.5', text: 'Llega al teléfono de quienes agregaron la tarjeta a Apple o Google Wallet (Google permite hasta 3 avisos al día por tarjeta) y aparece en la página de Membresía. Cada persona puede desactivar las notificaciones en su teléfono.' }),
       h('section', { class: 'card' },
         h('div', { class: 'card__head' }, h('h3', { text: 'Nuevo aviso' })),
         h('div', { class: 'grid grid--2' },

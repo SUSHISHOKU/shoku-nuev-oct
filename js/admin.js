@@ -134,7 +134,7 @@ async function loadData() {
   loy = deepMerge(DEFAULT_LOYALTY, remoteLoy || {});
   savedLoyJSON = remoteLoy || !can('card') ? JSON.stringify(loy) : '';
   applyPermissions();
-  view = firstView();
+  view = location.hash === '#visita' && (can('visits') || can('redeem')) ? { type: 'loy-visit' } : firstView();
   render();
   changed();
 }
@@ -681,6 +681,29 @@ document.addEventListener('keydown', (e) => {
     if (isDirty()) publish();
   }
 });
+
+/* ==================== App web (PWA) ==================== */
+
+if ('serviceWorker' in navigator && !USE_EMULATOR) {
+  navigator.serviceWorker.register('admin-sw.js', { scope: 'admin' }).catch((err) => console.warn('[Panel] App web:', err.message));
+}
+const installed = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let installPrompt = null;
+const installButtons = () => [$('#install-app'), $('#install-app-login')];
+const showInstall = (on) => installButtons().forEach((b) => { b.hidden = !on; });
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; showInstall(true); });
+window.addEventListener('appinstalled', () => { installPrompt = null; showInstall(false); toast('¡App instalada! Ya puedes abrirla desde tu pantalla de inicio.', 'ok'); });
+if (isIOS && !installed()) showInstall(true); // iPhone no tiene aviso automático: se explica cómo hacerlo
+installButtons().forEach((b) => b.addEventListener('click', async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    showInstall(false);
+  } else $('#install-help').showModal();
+}));
+$('#install-help-close').addEventListener('click', () => $('#install-help').close());
 
 loyalty = createLoyalty({
   h, bound, field, toggle, iconBtn, toast, picker, changed, render, go,

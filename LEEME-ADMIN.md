@@ -85,32 +85,34 @@ cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actua
 - Sellos, regalo, vigencia, recompensa, textos e ilustración se cambian en **Diseño de la tarjeta**.
 - Si das dos sellos al mismo cliente en menos de 3 horas, el panel te pide confirmar.
 - Para escanear con la cámara, el sitio debe abrirse con `https://`.
-- **Apple Wallet / Google Wallet:** se conectan en un segundo paso con tus certificados (ver abajo).
-  Mientras tanto los clientes usan su tarjeta digital desde la página de Membresía.
-
-### Pendiente: conectar Apple Wallet y Google Wallet
-El proyecto ya tiene el plan **Blaze**. Se necesitan estos datos (guarda los archivos privados en una carpeta
-`secretos/` **fuera** de `public`, nunca en el repositorio):
-- **Apple:** Team ID, Pass Type ID (ej. `pass.com.shoku.club`) y el certificado **.p12** con su contraseña.
-- **Google:** Issuer ID de Google Wallet y el archivo **.json** de la cuenta de servicio.
+- **Apple Wallet / Google Wallet:** el cliente agrega la tarjeta desde Membresía. Los sellos y avisos se actualizan solos
+  gracias a las funciones de la carpeta `functions/`. Las llaves privadas viven como secretos de Firebase, nunca en el repositorio.
 
 Los avisos por cercanía funcionan dentro del radio que deciden Apple y Google (≈100 m en iPhone);
 no es posible un radio de 5–10 km con tarjetas de Wallet.
+
+## Instalar el panel como app
+
+`admin.html` es una app web: se instala en el teléfono o la computadora y se abre con su propio ícono.
+- **Android o computadora (Chrome/Edge):** entra y toca **📲 Instalar la app**.
+- **iPhone:** ábrelo en Safari → **Compartir** → **Agregar a inicio**.
+
+Necesita internet para funcionar, porque los datos viven en Firebase.
 
 ## Personal, notificaciones y estrategias
 
 - **Personal y permisos** (solo el dueño): crea un usuario por mesero y elige qué puede hacer. Por defecto
   solo registra visitas, ve los datos del comensal y entrega recompensas. Para cambiar una contraseña olvidada,
   elimina el usuario y crea otro con un nombre distinto.
-- **Notificaciones:** escribe un aviso, elige a quién y toca **Notificar**. Aparece al momento en la página de la
-  tarjeta del cliente. Llegará a la pantalla de bloqueo cuando se publique el servidor de Wallet.
+- **Notificaciones:** escribe un aviso, elige a quién y toca **Notificar**. Llega al teléfono de quienes agregaron la
+  tarjeta a su Wallet y aparece en la página de Membresía.
 - **Estrategias con IA:** el diagnóstico funciona de inmediato. Para generar estrategias con IA hay que publicar la
-  función (carpeta `functions/`) y guardar una clave de la API de Anthropic como secreto:
+  función (carpeta `functions-ai/`) y guardar una clave de la API de Anthropic como secreto:
 
 ```bash
 firebase login
 firebase functions:secrets:set ANTHROPIC_API_KEY
-firebase deploy --only functions
+firebase deploy --only functions:ai
 ```
 
 ## Archivos
@@ -118,7 +120,7 @@ firebase deploy --only functions
 | Archivo | Para qué sirve |
 | --- | --- |
 | `index.html` | Inicio con video + libro animado + menú por secciones. |
-| `admin.html` | Panel de administración. |
+| `admin.html` | Panel de administración (app web instalable, con `admin.webmanifest` y `admin-sw.js`). |
 | `membresia.html` | Registro de clientes y tarjeta de fidelidad digital. |
 | `menu.html`, `meny.html` | Redirigen al menú nuevo (por si hay QR impresos con esas direcciones). |
 | `js/menu-data.js` | Menú por defecto (el del PDF). |

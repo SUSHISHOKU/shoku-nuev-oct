@@ -2,11 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Panel · Shoku</title>
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#0b0b0c">
-  <link rel="icon" href="img/logo.webp" type="image/webp">
+  <meta name="theme-color" content="#0e0e10">
+  <link rel="manifest" href="admin.webmanifest">
+  <link rel="icon" href="img/app-icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/app-icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Panel Shoku">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,6 +39,7 @@
       </label>
       <p class="login__error" id="login-error" role="alert"></p>
       <button class="btn btn--primary btn--block" id="login-btn" type="submit">Entrar</button>
+      <button class="btn btn--block btn--ghost" id="install-app-login" type="button" hidden>📲 Instalar la app</button>
       <a class="login__back" href="index.html">← Volver al sitio</a>
     </form>
   </main>
@@ -53,6 +60,7 @@
     <div class="layout">
       <aside class="sidebar" id="sidebar">
         <div class="whoami" id="whoami"></div>
+        <button class="btn btn--block btn--sm" id="install-app" type="button" hidden>📲 Instalar la app</button>
         <label class="search" data-perm="menu">
           <span class="sr-only">Buscar platillo</span>
           <input id="search" type="search" placeholder="Buscar platillo o precio…" autocomplete="off">
@@ -84,6 +92,16 @@
       <main class="editor" id="editor"></main>
     </div>
   </div>
+
+  <dialog id="install-help">
+    <h3>Instalar en iPhone</h3>
+    <ol class="install-steps">
+      <li>Abre esta página en <strong>Safari</strong>.</li>
+      <li>Toca el botón <strong>Compartir</strong> (el cuadro con la flecha).</li>
+      <li>Elige <strong>Agregar a inicio</strong> y luego <strong>Agregar</strong>.</li>
+    </ol>
+    <button class="btn btn--primary btn--block" id="install-help-close" type="button">Entendido</button>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input type="file" id="file-input" hidden>
