@@ -2,7 +2,7 @@ import { DEFAULT_DATA } from './menu-data.js';
 import { esc, safeUrl, formatPrice, telHref, normalizeData } from './util.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
-const CACHE_KEY = 'shoku-menu-cache-v1';
+const CACHE_KEY = 'shoku-menu-cache-v2';
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Fuerza un reflow antes de agregar la clase para que la transición CSS arranque,
 // sin depender de requestAnimationFrame (que no corre si la pestaña está en segundo plano).

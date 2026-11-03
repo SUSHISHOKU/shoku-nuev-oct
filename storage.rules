@@ -1,13 +1,13 @@
 rules_version = '2';
 
-// Reglas de Firebase Storage (opcional: requiere plan Blaze).
+// Reglas de Firebase Storage.
 // Cualquiera puede ver las fotos/videos; solo la cuenta del panel puede subir.
 service firebase.storage {
   match /b/{bucket}/o {
 
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'shoku@shoku-bb26b.firebaseapp.com';
+        && request.auth.token.email == 'shoku@shoku-4696b.firebaseapp.com';
     }
 
     match /imagenes/{file} {

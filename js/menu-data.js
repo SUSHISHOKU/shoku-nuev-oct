@@ -18,7 +18,7 @@ export const DEFAULT_DATA = {
     home: {
       video: 'fondo.mp4',
       poster: 'img/rollos.webp',
-      overlay: 0.45,
+      overlay: 0.1,
       showLogo: false,
       menuLabel: 'MENÚ',
       buttons: [

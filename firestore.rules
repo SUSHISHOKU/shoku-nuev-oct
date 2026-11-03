@@ -9,7 +9,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email == 'shoku@shoku-bb26b.firebaseapp.com';
+        && request.auth.token.email == 'shoku@shoku-4696b.firebaseapp.com';
     }
     function path(col, id) {
       return /databases/$(database)/documents/$(col)/$(id);

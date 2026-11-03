@@ -5,17 +5,17 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, connectFirestoreEmulator, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyB6Bs3CFmiz1FUd0hMQWwpk-s5p-AoVu5c',
-  authDomain: 'shoku-bb26b.firebaseapp.com',
-  projectId: 'shoku-bb26b',
-  storageBucket: 'shoku-bb26b.firebasestorage.app',
-  messagingSenderId: '838811032960',
-  appId: '1:838811032960:web:e667369157d501c74a7565',
-  measurementId: 'G-2VM1BM0CH6'
+  apiKey: 'AIzaSyBvToEAL_baFb0dNX0Hn7RBW1bNVy7A5B0',
+  authDomain: 'shoku-4696b.firebaseapp.com',
+  projectId: 'shoku-4696b',
+  storageBucket: 'shoku-4696b.firebasestorage.app',
+  messagingSenderId: '47036782323',
+  appId: '1:47036782323:web:c66e92594a3b3f34ad0986',
+  measurementId: 'G-64QM9MX8CQ'
 };
 
 // El usuario "shoku" del panel se traduce a este correo en Firebase Authentication.
-export const ADMIN_DOMAIN = 'shoku-bb26b.firebaseapp.com';
+export const ADMIN_DOMAIN = 'shoku-4696b.firebaseapp.com';
 export const usernameToEmail = (u) => (u.includes('@') ? u : `${u}@${ADMIN_DOMAIN}`).trim().toLowerCase();
 
 // Modo de pruebas: solo en localhost y abriendo una página con "?emulador" usa el emulador local de Firebase,

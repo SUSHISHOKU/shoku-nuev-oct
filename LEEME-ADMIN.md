@@ -11,7 +11,7 @@ Mientras no publiques nada desde el panel, el sitio muestra el menú nuevo inclu
 
 ## Configuración inicial en Firebase (una sola vez, ~5 minutos)
 
-Entra a <https://console.firebase.google.com> → proyecto **shoku-bb26b**.
+Entra a <https://console.firebase.google.com> → proyecto **shoku-4696b**.
 
 ### 1. Activar el inicio de sesión
 1. **Authentication** → *Comenzar* (si aparece).
@@ -19,7 +19,7 @@ Entra a <https://console.firebase.google.com> → proyecto **shoku-bb26b**.
 
 ### 2. Crear el usuario del panel
 1. **Authentication** → pestaña **Users** → **Agregar usuario**.
-2. Correo: `shoku@shoku-bb26b.firebaseapp.com`
+2. Correo: `shoku@shoku-4696b.firebaseapp.com`
 3. Contraseña: la contraseña que elegiste para el panel.
 
 En `admin.html` se entra escribiendo solo **shoku** como usuario (el panel completa el
@@ -37,12 +37,9 @@ Así cualquiera puede *ver* el menú, los clientes solo pueden *crear* su propia
 cuenta del panel puede ver datos de clientes, dar sellos o modificar el sitio.
 (Si la base estaba en "modo de prueba", cualquier persona podía escribir en ella.)
 
-### 5. (Opcional) Firebase Storage para fotos y videos grandes
-Storage requiere el plan **Blaze** (pago por uso; para un menú normalmente cuesta $0).
-- Si lo activas: **Storage** → Comenzar → pestaña **Reglas** → pega `storage.rules` → Publicar.
-- Si **no** lo activas: las fotos que subas se optimizan y se guardan en Firestore
-  automáticamente. Para cambiar el **video** puedes pegar un enlace directo a un `.mp4`
-  o reemplazar el archivo `fondo.mp4` del sitio.
+### 5. Reglas de Firebase Storage (importante)
+**Storage** → pestaña **Reglas** → borra lo que haya, pega el contenido de `storage.rules` → **Publicar**.
+Con esto las fotos y videos que subas desde el panel se guardan en Storage y solo la cuenta del panel puede subirlos.
 
 ### 6. Publicar por primera vez
 Abre `admin.html`, entra y presiona **Publicar cambios**. Desde ese momento el sitio
@@ -88,7 +85,7 @@ cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actua
   Mientras tanto los clientes usan su tarjeta digital desde la página de Membresía.
 
 ### Pendiente: conectar Apple Wallet y Google Wallet
-Se necesita el plan **Blaze** de Firebase y estos datos (guarda los archivos privados en una carpeta
+El proyecto ya tiene el plan **Blaze**. Se necesitan estos datos (guarda los archivos privados en una carpeta
 `secretos/` **fuera** de `public`, nunca en el repositorio):
 - **Apple:** Team ID, Pass Type ID (ej. `pass.com.shoku.club`) y el certificado **.p12** con su contraseña.
 - **Google:** Issuer ID de Google Wallet y el archivo **.json** de la cuenta de servicio.
