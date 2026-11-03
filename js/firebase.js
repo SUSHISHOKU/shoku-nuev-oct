@@ -16,6 +16,7 @@ export const firebaseConfig = {
 
 // El usuario "shoku" del panel se traduce a este correo en Firebase Authentication.
 export const ADMIN_DOMAIN = 'shoku-4696b.firebaseapp.com';
+export const OWNER_EMAIL = `shoku@${ADMIN_DOMAIN}`;
 export const usernameToEmail = (u) => (u.includes('@') ? u : `${u}@${ADMIN_DOMAIN}`).trim().toLowerCase();
 
 // Modo de pruebas: solo en localhost y abriendo una página con "?emulador" usa el emulador local de Firebase,

@@ -25,16 +25,17 @@ Entra a <https://console.firebase.google.com> → proyecto **shoku-4696b**.
 En `admin.html` se entra escribiendo solo **shoku** como usuario (el panel completa el
 correo automáticamente).
 
-### 3. Bloquear que otras personas creen cuentas (importante)
-**Authentication** → **Settings** → **User actions** → desmarca
-**Enable create (sign-up)** → Guardar.
+### 3. Permitir crear usuarios del personal (importante)
+**Authentication** → **Settings** → **User actions** → deja **activado** **Enable create (sign-up)**.
+El panel lo usa para crear las cuentas de tus meseros. Es seguro: una cuenta nueva no puede ver ni
+cambiar nada hasta que el dueño le da permisos desde **Personal y permisos**. Primero crea la cuenta del dueño (paso 2).
 
 ### 4. Reglas de seguridad de Firestore (importante — vuelve a pegarlas si ya lo habías hecho, cambiaron)
 **Firestore Database** → pestaña **Reglas** → borra lo que haya, pega el contenido de
 `firestore.rules` → **Publicar**.
 
-Así cualquiera puede *ver* el menú, los clientes solo pueden *crear* su propia tarjeta, y solo la
-cuenta del panel puede ver datos de clientes, dar sellos o modificar el sitio.
+Así cualquiera puede *ver* el menú, los clientes solo pueden *crear* su propia tarjeta, y solo el
+dueño o el personal con permiso pueden ver datos de clientes, dar sellos o modificar el sitio.
 (Si la base estaba en "modo de prueba", cualquier persona podía escribir en ella.)
 
 ### 5. Reglas de Firebase Storage (importante)
@@ -78,7 +79,10 @@ cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actua
 | Cambiar logo, colores, fondo, tipo de sello (sushi, estrella, emoji o PNG), número de sellos y recompensa | **Diseño de la tarjeta**. |
 | Agregar promociones y configurar los mensajes automáticos | **Promociones y mensajes**. |
 
-- Cada vez que se completan los sellos, la tarjeta vuelve a 0 y se acumula una recompensa para canjear.
+- Al registrarse, el cliente recibe los **sellos de regalo** configurados (por defecto 1 de 4).
+- Cada vez que se completan los sellos, la tarjeta vuelve a 0, su vigencia se reinicia y se acumula una recompensa.
+- Una tarjeta **vencida** no recibe sellos ni canjea recompensas hasta que se renueve; al renovar empieza de nuevo.
+- Sellos, regalo, vigencia, recompensa, textos e ilustración se cambian en **Diseño de la tarjeta**.
 - Si das dos sellos al mismo cliente en menos de 3 horas, el panel te pide confirmar.
 - Para escanear con la cámara, el sitio debe abrirse con `https://`.
 - **Apple Wallet / Google Wallet:** se conectan en un segundo paso con tus certificados (ver abajo).
@@ -92,6 +96,22 @@ El proyecto ya tiene el plan **Blaze**. Se necesitan estos datos (guarda los arc
 
 Los avisos por cercanía funcionan dentro del radio que deciden Apple y Google (≈100 m en iPhone);
 no es posible un radio de 5–10 km con tarjetas de Wallet.
+
+## Personal, notificaciones y estrategias
+
+- **Personal y permisos** (solo el dueño): crea un usuario por mesero y elige qué puede hacer. Por defecto
+  solo registra visitas, ve los datos del comensal y entrega recompensas. Para cambiar una contraseña olvidada,
+  elimina el usuario y crea otro con un nombre distinto.
+- **Notificaciones:** escribe un aviso, elige a quién y toca **Notificar**. Aparece al momento en la página de la
+  tarjeta del cliente. Llegará a la pantalla de bloqueo cuando se publique el servidor de Wallet.
+- **Estrategias con IA:** el diagnóstico funciona de inmediato. Para generar estrategias con IA hay que publicar la
+  función (carpeta `functions/`) y guardar una clave de la API de Anthropic como secreto:
+
+```bash
+firebase login
+firebase functions:secrets:set ANTHROPIC_API_KEY
+firebase deploy --only functions
+```
 
 ## Archivos
 

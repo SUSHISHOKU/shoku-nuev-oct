@@ -232,3 +232,29 @@ dialog.scan { width: min(94vw, 460px); }
 .scan__frame { position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden; background: #000; margin-bottom: 12px; }
 .scan__video { width: 100%; height: 100%; object-fit: cover; }
 .scan__aim { position: absolute; inset: 18%; border: 3px solid var(--gold); border-radius: 18px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); }
+
+/* ==================== Personal y estrategias ==================== */
+.whoami { font-size: .78rem; color: var(--gold); letter-spacing: .04em; }
+.whoami:empty { display: none; }
+.is-danger { color: var(--danger) !important; }
+.pill--bienvenida { background: rgba(200,32,43,.16); color: #f19aa0; }
+.pill--renovacion { background: rgba(255,255,255,.08); color: var(--muted); }
+.staff-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 12px; background: #131316; }
+.staff-card.is-off { opacity: .55; }
+.staff-card__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.staff-card__head strong { font-size: 1.02rem; }
+.staff-card__head small { color: var(--muted); }
+.staff-card__head .spacer { flex: 1; }
+.perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; }
+.perm-grid small { display: block; color: var(--muted); font-size: .74rem; margin-left: 26px; line-height: 1.3; }
+.insight { padding: 12px 14px; border-radius: 12px; background: #131316; border-left: 3px solid var(--gold); margin-top: 10px; line-height: 1.5; font-size: .92rem; }
+.insight strong { display: block; margin-bottom: 2px; }
+.insight--warn { border-left-color: var(--danger); }
+.insight--good { border-left-color: var(--ok); }
+.weekbars { display: flex; align-items: flex-end; gap: 8px; height: 130px; }
+.strategy { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 12px; background: #131316; }
+.strategy h4 { font-size: 1.05rem; font-weight: 600; color: #f3dfb2; margin-bottom: 6px; }
+.strategy p { color: var(--muted); line-height: 1.5; font-size: .92rem; margin-bottom: 8px; }
+.strategy ul { margin: 0 0 8px 18px; line-height: 1.6; font-size: .92rem; }
+.strategy small { color: var(--gold); font-size: .78rem; }
+select { color-scheme: dark; }

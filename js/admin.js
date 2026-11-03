@@ -1,10 +1,11 @@
 import { DEFAULT_DATA } from './menu-data.js';
-import { app, db, MENU_DOC, MEDIA_COLLECTION, MEDIA_PREFIX, USE_EMULATOR, usernameToEmail, resolveMedia } from './firebase.js';
+import { app, db, MENU_DOC, MEDIA_COLLECTION, MEDIA_PREFIX, USE_EMULATOR, OWNER_EMAIL, usernameToEmail, resolveMedia } from './firebase.js';
 import { getAuth, connectAuthEmulator, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { safeUrl, formatPrice, normalizeData, slugify, deepMerge } from './util.js';
 import { DEFAULT_LOYALTY } from './loyalty-card.js';
 import { createLoyalty } from './admin-loyalty.js';
+import { createTeam } from './admin-team.js';
 
 const auth = getAuth(app);
 if (USE_EMULATOR) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
@@ -25,6 +26,10 @@ let storageOk = null;
 let loy = null; // configuración de la tarjeta de fidelidad (site/loyalty)
 let savedLoyJSON = '';
 let loyalty = null;
+let team = null;
+// Sesión actual: el dueño puede todo; el personal, solo lo que tenga permitido.
+let session = { owner: false, name: '', perms: {} };
+const can = (perm) => session.owner || session.perms[perm] === true;
 
 /* ==================== Utilidades de interfaz ==================== */
 
@@ -117,7 +122,7 @@ async function loadData() {
     delete remote.updatedAt; delete remote.updatedBy;
   }
   data = normalizeData(DEFAULT_DATA, remote);
-  savedJSON = remote ? JSON.stringify(data) : '';
+  savedJSON = remote || !can('menu') ? JSON.stringify(data) : '';
   meta.isNew = !remote;
 
   let remoteLoy = null;
@@ -127,10 +132,32 @@ async function loadData() {
   } catch { /* se usa la configuración por defecto */ }
   if (remoteLoy) { delete remoteLoy.updatedAt; delete remoteLoy.updatedBy; }
   loy = deepMerge(DEFAULT_LOYALTY, remoteLoy || {});
-  savedLoyJSON = remoteLoy ? JSON.stringify(loy) : '';
-  view = { type: 'section', id: data.sections[0]?.id };
+  savedLoyJSON = remoteLoy || !can('card') ? JSON.stringify(loy) : '';
+  applyPermissions();
+  view = firstView();
   render();
   changed();
+}
+
+// Primera pantalla según los permisos de quien entró.
+function firstView() {
+  if (can('menu')) return { type: 'section', id: data.sections[0]?.id };
+  if (can('visits') || can('redeem')) return { type: 'loy-visit' };
+  for (const [perm, type] of [['customers', 'loy-customers'], ['reports', 'loy-reports'], ['notify', 'loy-notify'], ['card', 'loy-design'], ['ai', 'loy-ai']]) {
+    if (can(perm)) return { type };
+  }
+  return { type: 'none' };
+}
+
+// Oculta lo que esta persona no puede usar. Las reglas de Firestore lo impiden de todos modos.
+function applyPermissions() {
+  document.querySelectorAll('[data-perm]').forEach((el) => {
+    const p = el.dataset.perm;
+    const ok = p === 'owner' ? session.owner : p === 'owner-or-admin' ? (session.owner || can('ai') || can('notify')) : p === 'visits' ? (can('visits') || can('redeem')) : can(p);
+    el.hidden = !ok;
+  });
+  $('#publish-btn').hidden = !(can('menu') || can('card'));
+  $('#whoami').textContent = session.owner ? 'Dueño' : session.name;
 }
 
 async function publish() {
@@ -342,6 +369,10 @@ function render() {
   else if (view.type === 'home') content = renderHome();
   else if (view.type === 'look') content = renderLook();
   else if (view.type === 'backup') content = renderBackup();
+  else if (view.type === 'none') content = h('p', { class: 'empty', text: 'Tu usuario no tiene permisos asignados. Pídele al dueño que te los active.' });
+  else if (view.type === 'loy-staff') content = team.renderStaff();
+  else if (view.type === 'loy-ai') content = team.renderAI();
+  else if (view.type === 'loy-notify') content = team.renderNotify();
   else if (view.type.startsWith('loy-')) content = loyalty.renderView(view);
   else {
     const s = data.sections.find((x) => x.id === view.id) || data.sections[0];
@@ -654,10 +685,31 @@ document.addEventListener('keydown', (e) => {
 loyalty = createLoyalty({
   h, bound, field, toggle, iconBtn, toast, picker, changed, render, go,
   getLoy: () => loy,
-  userEmail: () => auth.currentUser?.email || ''
+  getMenu: () => data,
+  can,
+  isOwner: () => session.owner,
+  userEmail: () => session.name || auth.currentUser?.email || ''
 });
+team = createTeam({ h, field, toast, render, loyalty, getMenu: () => data, getLoy: () => loy, can, app, userEmail: () => session.name || auth.currentUser?.email || '' });
 
-onAuthStateChanged(auth, (user) => {
+// Determina si quien entró es el dueño o personal activo; a cualquier otra cuenta se le cierra la sesión.
+async function resolveSession(user) {
+  if (user.email === OWNER_EMAIL) return { owner: true, name: 'Dueño', perms: {} };
+  const snap = await getDoc(doc(db, 'staff', user.uid)).catch(() => null);
+  const st = snap?.exists() ? snap.data() : null;
+  return st?.active ? { owner: false, name: st.name || user.email, perms: st.perms || {} } : null;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const found = await resolveSession(user);
+    if (!found) {
+      await signOut(auth);
+      $('#login-error').textContent = 'Este usuario no tiene acceso o fue desactivado. Habla con el dueño.';
+      return;
+    }
+    session = found;
+  }
   $('#login-view').hidden = !!user;
   $('#app-view').hidden = !user;
   if (user) loadData();

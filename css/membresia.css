@@ -70,3 +70,16 @@
   opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 50;
 }
 .toast-lite.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+.mb__notices:empty { display: none; }
+.mb__notices { margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; }
+.notice-card {
+  position: relative; padding: 14px 40px 14px 16px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(201,164,92,.24), rgba(201,164,92,.08));
+  border: 1px solid var(--gold-soft);
+  animation: notice-in .4s ease both;
+}
+.notice-card h3 { font-weight: 600; font-size: .95rem; color: #f3e3c0; }
+.notice-card p { margin-top: 4px; font-size: .9rem; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.notice-card button { position: absolute; top: 6px; right: 8px; width: 32px; height: 32px; font-size: 1.3rem; color: var(--muted); }
+@keyframes notice-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }

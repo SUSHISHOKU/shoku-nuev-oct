@@ -6,7 +6,8 @@
   escritura por sí sola. La protección real son las reglas y la cuenta de Authentication.
 - No guardes contraseñas en este repositorio. La contraseña del panel solo existe en
   Firebase Authentication.
-- Mantén desactivado *Enable create (sign-up)* en Authentication para que nadie más pueda crear cuentas.
+- *Enable create (sign-up)* queda activado para crear cuentas del personal. Una cuenta nueva no tiene ningún acceso hasta que el dueño le da permisos en la colección `staff`.
+- La clave de la API de IA vive como secreto de Firebase; nunca se pone en el sitio ni en el repositorio.
 - Todo el texto editable se muestra escapado (sin HTML) y los enlaces solo aceptan `https://`,
   `tel:`, `mailto:` o rutas del propio sitio.
 

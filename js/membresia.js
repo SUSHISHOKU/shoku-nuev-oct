@@ -1,6 +1,6 @@
 import { db, resolveMedia } from './firebase.js';
-import { doc, getDoc, collection, writeBatch, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { DEFAULT_LOYALTY, renderCard, hydrateCard, qrSvg, normalizePhone, firstName } from './loyalty-card.js';
+import { doc, getDoc, collection, writeBatch, onSnapshot, serverTimestamp, Timestamp, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { DEFAULT_LOYALTY, renderCard, hydrateCard, qrSvg, normalizePhone, firstName, welcomeOf, computeExpiry, headlineText, isExpired } from './loyalty-card.js';
 import { esc, safeUrl, deepMerge } from './util.js';
 
 const $ = (s) => document.querySelector(s);
@@ -8,6 +8,9 @@ const STORE_KEY = 'shoku-card-id';
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 let cfg = structuredClone(DEFAULT_LOYALTY);
 let unsubscribe = null;
+let unsubscribeNotices = null;
+let currentCard = null;
+let lastBroadcasts = [];
 
 const resolveSrc = (src) => Promise.resolve(src?.startsWith('media:') ? resolveMedia(src) : safeUrl(src));
 const store = {
@@ -28,12 +31,13 @@ async function loadConfig() {
     const snap = await getDoc(doc(db, 'site', 'loyalty'));
     if (snap.exists()) cfg = deepMerge(DEFAULT_LOYALTY, snap.data());
   } catch (err) { console.warn('[Shoku] Config de tarjeta local:', err.message); }
-  document.documentElement.style.setProperty('--gold', cfg.card.accent || '#c9a45c');
+  if (cfg.card.layout !== 'art') document.documentElement.style.setProperty('--gold', cfg.card.accent || '#c9a45c');
   $('#program-name').textContent = cfg.programName;
-  $('#headline').textContent = cfg.card.headline || '';
+  $('#headline').textContent = headlineText(cfg);
   $('#terms').textContent = cfg.terms || '';
   $('#privacy-text').textContent = `Acepto el aviso de privacidad: ${cfg.privacy || ''}`;
-  resolveSrc(cfg.card.logo).then((u) => { if (u) $('#bar-logo').src = u; });
+  const w = welcomeOf(cfg.card);
+  $('#signup-note').textContent = `Es gratis y tarda 30 segundos.${w ? ` Al registrarte te regalamos ${w === 1 ? 'tu primer sello' : `${w} sellos`}.` : ''}`;
   renderPromos();
 }
 
@@ -57,13 +61,69 @@ function paintCard(state, sample = false) {
   setTimeout(() => slot.classList.add('is-painted'), 1000);
 }
 
+/* ---------- Avisos del restaurante ---------- */
+
+const NOTICE_DAYS = 7;
+const DISMISS_KEY = 'shoku-avisos-vistos';
+const dismissed = () => { try { return JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]'); } catch { return []; } };
+
+// Misma lógica que los grupos del panel, con los datos que tiene la tarjeta.
+function noticeApplies(b, c) {
+  const now = Date.now();
+  if (b.audience === 'reward') return (c.rewardsAvailable || 0) > 0;
+  if (b.audience === 'expiring7') {
+    const e = c.expiresAt?.toDate?.()?.getTime();
+    return !!e && e >= now && e <= now + 7 * 86400000;
+  }
+  if (b.audience === 'inactive14') {
+    const ref = (c.lastVisit || c.createdAt)?.toDate?.()?.getTime() || now;
+    return now - ref >= 14 * 86400000;
+  }
+  return true;
+}
+
+function paintNotices() {
+  const box = $('#notices');
+  if (!currentCard) { box.replaceChildren(); return; }
+  const gone = dismissed();
+  const since = Date.now() - NOTICE_DAYS * 86400000;
+  const list = lastBroadcasts.filter((b) => {
+    const at = b.createdAt?.toDate?.()?.getTime();
+    return at && at >= since && !gone.includes(b.id) && noticeApplies(b, currentCard);
+  });
+  box.innerHTML = list.map((b) => `
+    <article class="notice-card">
+      <button type="button" aria-label="Cerrar aviso" data-dismiss="${esc(b.id)}">×</button>
+      <h3>🔔 ${esc(b.title || 'Aviso de Shoku')}</h3>
+      <p>${esc(b.message)}</p>
+    </article>`).join('');
+}
+
+function watchNotices() {
+  unsubscribeNotices?.();
+  unsubscribeNotices = onSnapshot(query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(5)), (snap) => {
+    lastBroadcasts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    paintNotices();
+  }, () => {});
+}
+
+$('#notices').addEventListener('click', (e) => {
+  const id = e.target.closest('[data-dismiss]')?.dataset.dismiss;
+  if (!id) return;
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed(), id].slice(-50))); } catch { /* sin almacenamiento */ }
+  paintNotices();
+});
+
 /* ---------- Registro ---------- */
 
 function showSignup() {
   unsubscribe?.();
+  unsubscribeNotices?.();
+  currentCard = null;
+  paintNotices();
   $('#signup').hidden = false;
   $('#mine').hidden = true;
-  paintCard({ name: 'Tu nombre', stamps: Math.min(3, cfg.card.stampsRequired - 1) }, true);
+  paintCard({ name: 'Tu nombre', stamps: welcomeOf(cfg.card), expiresAt: computeExpiry(cfg.card) }, true);
 }
 
 $('#signup-form').addEventListener('submit', async (e) => {
@@ -89,14 +149,17 @@ $('#signup-form').addEventListener('submit', async (e) => {
   btn.textContent = 'Creando tu tarjeta…';
   try {
     const id = doc(collection(db, 'customers')).id;
+    const stamps = welcomeOf(cfg.card);
+    const expiry = computeExpiry(cfg.card);
+    const expiresAt = expiry ? Timestamp.fromDate(expiry) : null;
     const batch = writeBatch(db);
     batch.set(doc(db, 'customers', id), {
       name, phone, birthday, email, consent: true, source: 'membresia',
-      stamps: 0, visits: 0, rewardsAvailable: 0, rewardsEarned: 0, rewardsRedeemed: 0,
-      lastVisit: null, createdAt: serverTimestamp()
+      stamps, welcomeStamps: stamps, visits: 0, rewardsAvailable: 0, rewardsEarned: 0, rewardsRedeemed: 0,
+      lastVisit: null, expiresAt, createdAt: serverTimestamp()
     });
     batch.set(doc(db, 'cards', id), {
-      firstName: firstName(name), stamps: 0, rewardsAvailable: 0,
+      firstName: firstName(name), stamps, rewardsAvailable: 0, expiresAt,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
     // Índice por teléfono: solo se puede crear una vez, así evitamos tarjetas duplicadas.
@@ -141,7 +204,7 @@ async function showCard(id, isNew = false) {
   renderWallet(id);
   const qr = await qrSvg(cardUrl(id)).catch(() => '');
   const code = id.slice(0, 6).toUpperCase();
-  paintCard({ name: '', stamps: 0, qr, code });
+  paintCard({ name: '', stamps: welcomeOf(cfg.card), qr, code });
   unsubscribe?.();
   unsubscribe = onSnapshot(doc(db, 'cards', id), (snap) => {
     if (!snap.exists()) {
@@ -151,9 +214,17 @@ async function showCard(id, isNew = false) {
       return showSignup();
     }
     const c = snap.data();
-    paintCard({ name: c.firstName, stamps: c.stamps, rewards: c.rewardsAvailable, qr, code });
+    currentCard = c;
+    paintNotices();
+    const expiresAt = c.expiresAt?.toDate?.() || null;
+    paintCard({ name: c.firstName, stamps: c.stamps, rewards: c.rewardsAvailable, qr, code, expiresAt });
+    if (isExpired(expiresAt)) $('#wallet-note').textContent = 'Tu tarjeta venció. Pasa a caja y la renovamos.';
   }, () => toast('Sin conexión: mostrando tu tarjeta guardada.'));
-  if (isNew) toast('¡Listo! Tu tarjeta fue creada.');
+  watchNotices();
+  if (isNew) {
+    const w = welcomeOf(cfg.card);
+    toast(w ? `¡Listo! Ya tienes ${w === 1 ? 'tu primer sello' : `${w} sellos`}.` : '¡Listo! Tu tarjeta fue creada.');
+  }
 }
 
 $('#copy-link').addEventListener('click', async () => {

@@ -13,17 +13,40 @@
       "*.md",
       "**/.*",
       "**/node_modules/**",
-      "_respaldo_anterior/**"
+      "_respaldo_anterior/**",
+      "functions/**",
+      "wallet-server/**",
+      "secretos/**",
+      "public/**"
     ],
     "headers": [
       {
         "source": "**/*.@(webp|png|jpg|mp4)",
-        "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800"
+          }
+        ]
       },
       {
         "source": "admin.html",
-        "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
       }
+    ]
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs22",
+    "ignore": [
+      "node_modules",
+      ".secret.local",
+      "*.log"
     ]
   }
 }

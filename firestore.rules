@@ -3,66 +3,107 @@ rules_version = '2';
 // Reglas de Firestore para el sitio y la tarjeta de fidelidad de Shoku.
 // - El menú y la configuración de la tarjeta son públicos para LEER.
 // - Los clientes solo pueden CREAR su propia tarjeta (no leer ni cambiar la de otros).
-// - Todo lo demás (sellos, visitas, reportes) solo lo puede hacer la cuenta del panel.
+// - El dueño puede todo. El personal solo puede lo que el dueño le haya permitido (colección staff).
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
+    function isOwner() {
       return request.auth != null
         && request.auth.token.email == 'shoku@shoku-4696b.firebaseapp.com';
     }
     function path(col, id) {
       return /databases/$(database)/documents/$(col)/$(id);
     }
+    function staffCan(perm) {
+      let s = path('staff', request.auth.uid);
+      return request.auth != null && exists(s)
+        && get(s).data.active == true
+        && get(s).data.perms.get(perm, false) == true;
+    }
+    function can(perm) {
+      return isOwner() || staffCan(perm);
+    }
+
+    // Configuración vigente de la tarjeta (con los mismos valores por defecto que js/loyalty-card.js).
+    function cardConfig() {
+      let p = path('site', 'loyalty');
+      return exists(p) ? get(p).data.card : {};
+    }
+    function welcomeStamps() {
+      return cardConfig().get('welcomeStamps', 1);
+    }
+    function validityMonths() {
+      return cardConfig().get('validityMonths', 1);
+    }
+    function validExpiry(d) {
+      return validityMonths() == 0
+        ? d.expiresAt == null
+        : (d.expiresAt is timestamp
+           && d.expiresAt <= request.time + duration.value(validityMonths() * 31 + 1, 'd'));
+    }
 
     // Contenido del sitio: site/menu (menú) y site/loyalty (diseño de la tarjeta, promociones, mensajes).
     match /site/{docId} {
       allow read: if true;
-      allow write: if isAdmin() && (
-        (docId == 'menu' && request.resource.data.sections is list && request.resource.data.settings is map)
-        || (docId == 'loyalty' && request.resource.data.card is map)
-      );
+      allow write: if (docId == 'menu' && can('menu')
+          && request.resource.data.sections is list && request.resource.data.settings is map)
+        || (docId == 'loyalty' && can('card') && request.resource.data.card is map);
     }
 
     // Fotos subidas desde el panel cuando Firebase Storage no está activo.
     match /media/{mediaId} {
       allow read: if true;
-      allow create, update: if isAdmin()
+      allow create, update: if (can('menu') || can('card'))
         && request.resource.data.data is string
         && request.resource.data.data.size() < 1000000
         && request.resource.data.data.matches('data:image/.*');
-      allow delete: if isAdmin();
+      allow delete: if isOwner();
     }
 
     // Datos privados del cliente (nombre, teléfono, cumpleaños, correo, sellos).
     match /customers/{id} {
       allow create: if request.resource.data.keys().hasOnly([
-            'name', 'phone', 'birthday', 'email', 'consent', 'source', 'stamps', 'visits',
-            'rewardsAvailable', 'rewardsEarned', 'rewardsRedeemed', 'lastVisit', 'createdAt'])
+            'name', 'phone', 'birthday', 'email', 'consent', 'source', 'stamps', 'welcomeStamps', 'visits',
+            'rewardsAvailable', 'rewardsEarned', 'rewardsRedeemed', 'lastVisit', 'expiresAt', 'createdAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 3 && request.resource.data.name.size() <= 80
         && request.resource.data.phone is string && request.resource.data.phone.matches('[0-9]{10}')
         && request.resource.data.email is string && request.resource.data.email.size() <= 120
         && request.resource.data.birthday is string && request.resource.data.birthday.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && request.resource.data.consent == true
-        && request.resource.data.stamps == 0 && request.resource.data.visits == 0
+        && request.resource.data.stamps == welcomeStamps()
+        && request.resource.data.welcomeStamps == welcomeStamps()
+        && request.resource.data.visits == 0
         && request.resource.data.rewardsAvailable == 0 && request.resource.data.rewardsEarned == 0
         && request.resource.data.rewardsRedeemed == 0 && request.resource.data.lastVisit == null
+        && validExpiry(request.resource.data)
         && request.resource.data.createdAt == request.time
         && existsAfter(path('cards', id))
         && existsAfter(path('phones', request.resource.data.phone));
-      allow read, update, delete: if isAdmin();
+      allow get: if can('visits') || can('redeem') || can('customers') || can('reports') || can('notify') || can('ai');
+      allow list: if can('customers') || can('reports') || can('notify') || can('ai');
+      allow update: if can('visits') || can('redeem');
+      allow delete: if isOwner();
+
+      // Historial de cada cliente: se necesita conocer su tarjeta para leerlo.
+      match /history/{entryId} {
+        allow read: if can('visits') || can('redeem') || can('customers') || can('reports');
+        allow create: if can('visits') || can('redeem');
+        allow update, delete: if isOwner();
+      }
     }
 
     // Vista pública mínima de la tarjeta (solo primer nombre y sellos). El ID es secreto y largo.
     match /cards/{id} {
       allow get: if true;
-      allow list: if isAdmin();
-      allow create: if request.resource.data.keys().hasOnly(['firstName', 'stamps', 'rewardsAvailable', 'createdAt', 'updatedAt'])
+      allow list: if isOwner();
+      allow create: if request.resource.data.keys().hasOnly(['firstName', 'stamps', 'rewardsAvailable', 'expiresAt', 'createdAt', 'updatedAt'])
         && request.resource.data.firstName is string && request.resource.data.firstName.size() <= 40
-        && request.resource.data.stamps == 0 && request.resource.data.rewardsAvailable == 0
+        && request.resource.data.stamps == welcomeStamps() && request.resource.data.rewardsAvailable == 0
+        && validExpiry(request.resource.data)
         && existsAfter(path('customers', id));
-      allow update, delete: if isAdmin();
+      allow update: if can('visits') || can('redeem');
+      allow delete: if isOwner();
     }
 
     // Índice de teléfonos: evita que un mismo número tenga dos tarjetas.
@@ -70,12 +111,35 @@ service cloud.firestore {
       allow create: if phone.matches('[0-9]{10}')
         && request.resource.data.keys().hasOnly(['cardId'])
         && getAfter(path('customers', request.resource.data.cardId)).data.phone == phone;
-      allow read, update, delete: if isAdmin();
+      allow read: if can('visits') || can('redeem') || can('customers');
+      allow update, delete: if isOwner();
     }
 
     // Historial de visitas, sellos y canjes.
     match /visits/{visitId} {
-      allow read, write: if isAdmin();
+      allow read: if can('reports') || can('ai');
+      allow create: if can('visits') || can('redeem');
+      allow update, delete: if isOwner();
+    }
+
+    // Avisos enviados desde el panel. Son públicos porque los muestra la página de la tarjeta.
+    match /broadcasts/{id} {
+      allow read: if true;
+      allow create: if can('notify')
+        && request.resource.data.message is string && request.resource.data.message.size() <= 300;
+      allow update, delete: if isOwner();
+    }
+
+    // Personal del restaurante y sus permisos. Solo el dueño los administra.
+    match /staff/{uid} {
+      allow read: if isOwner() || (request.auth != null && request.auth.uid == uid);
+      allow write: if isOwner();
+    }
+
+    // Historial de estrategias generadas con IA.
+    match /strategies/{id} {
+      allow read, create: if can('ai');
+      allow update, delete: if isOwner();
     }
 
     // Todo lo demás, cerrado.

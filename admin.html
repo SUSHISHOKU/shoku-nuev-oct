@@ -52,23 +52,30 @@
 
     <div class="layout">
       <aside class="sidebar" id="sidebar">
-        <label class="search">
+        <div class="whoami" id="whoami"></div>
+        <label class="search" data-perm="menu">
           <span class="sr-only">Buscar platillo</span>
           <input id="search" type="search" placeholder="Buscar platillo o precio…" autocomplete="off">
         </label>
-        <p class="sidebar__label">Secciones del menú</p>
-        <ol class="nav-list" id="section-list"></ol>
-        <button class="btn btn--ghost btn--block btn--sm" id="add-section" type="button">+ Nueva sección</button>
+        <p class="sidebar__label" data-perm="menu">Secciones del menú</p>
+        <ol class="nav-list" id="section-list" data-perm="menu"></ol>
+        <button class="btn btn--ghost btn--block btn--sm" id="add-section" type="button" data-perm="menu">+ Nueva sección</button>
         <p class="sidebar__label">Tarjeta de fidelidad</p>
         <ul class="nav-list">
-          <li><button type="button" data-view="loy-visit">📷 Registrar visita</button></li>
-          <li><button type="button" data-view="loy-customers">Clientes</button></li>
-          <li><button type="button" data-view="loy-reports">Reportes</button></li>
-          <li><button type="button" data-view="loy-design">Diseño de la tarjeta</button></li>
-          <li><button type="button" data-view="loy-promos">Promociones y mensajes</button></li>
+          <li data-perm="visits"><button type="button" data-view="loy-visit">📷 Registrar visita</button></li>
+          <li data-perm="customers"><button type="button" data-view="loy-customers">Clientes</button></li>
+          <li data-perm="reports"><button type="button" data-view="loy-reports">Reportes</button></li>
+          <li data-perm="card"><button type="button" data-view="loy-design">Diseño de la tarjeta</button></li>
+          <li data-perm="card"><button type="button" data-view="loy-promos">Promociones y mensajes</button></li>
         </ul>
-        <p class="sidebar__label">Sitio</p>
+        <p class="sidebar__label" data-perm="owner-or-admin">Administración</p>
         <ul class="nav-list">
+          <li data-perm="notify"><button type="button" data-view="loy-notify">🔔 Notificaciones</button></li>
+          <li data-perm="ai"><button type="button" data-view="loy-ai">✨ Estrategias con IA</button></li>
+          <li data-perm="owner"><button type="button" data-view="loy-staff">Personal y permisos</button></li>
+        </ul>
+        <p class="sidebar__label" data-perm="menu">Sitio</p>
+        <ul class="nav-list" data-perm="menu">
           <li><button type="button" data-view="home">Inicio, botones y enlaces</button></li>
           <li><button type="button" data-view="look">Apariencia y fondo</button></li>
           <li><button type="button" data-view="backup">Respaldo</button></li>
