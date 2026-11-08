@@ -63,7 +63,7 @@ service cloud.firestore {
     // Datos privados del cliente (nombre, teléfono, cumpleaños, correo, sellos).
     match /customers/{id} {
       allow create: if request.resource.data.keys().hasOnly([
-            'name', 'phone', 'birthday', 'email', 'consent', 'source', 'stamps', 'welcomeStamps', 'visits',
+            'name', 'phone', 'birthday', 'email', 'consent', 'whatsappOk', 'source', 'stamps', 'welcomeStamps', 'visits',
             'rewardsAvailable', 'rewardsEarned', 'rewardsRedeemed', 'lastVisit', 'expiresAt', 'createdAt'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 3 && request.resource.data.name.size() <= 80
@@ -80,8 +80,8 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && existsAfter(path('cards', id))
         && existsAfter(path('phones', request.resource.data.phone));
-      allow get: if can('visits') || can('redeem') || can('customers') || can('reports') || can('notify') || can('ai');
-      allow list: if can('customers') || can('reports') || can('notify') || can('ai');
+      allow get: if can('visits') || can('redeem') || can('customers') || can('reports') || can('notify') || can('ai') || can('feedback');
+      allow list: if can('customers') || can('reports') || can('notify') || can('ai') || can('feedback');
       allow update: if can('visits') || can('redeem');
       allow delete: if isOwner();
 
@@ -128,6 +128,12 @@ service cloud.firestore {
       allow create: if can('notify')
         && request.resource.data.message is string && request.resource.data.message.size() <= 300;
       allow update, delete: if isOwner();
+    }
+
+    // Retroalimentación: teléfonos e historial de tarjetas, aunque la tarjeta ya se haya retirado.
+    match /contacts/{phone} {
+      allow read, create, update: if can('feedback');
+      allow delete: if isOwner();
     }
 
     // Personal del restaurante y sus permisos. Solo el dueño los administra.

@@ -115,3 +115,17 @@
 .lc--art .lc-qr { margin-top: 6px; }
 .lc--art .lc-qr__box { box-shadow: 0 0 0 1px color-mix(in srgb, var(--lc-fg) 14%, transparent); }
 .lc.is-expired .lc-stamp, .lc.is-expired .lca-art { filter: grayscale(.85); }
+
+/* Tarjeta completa: el mensaje de felicidades ocupa el lugar de los sellos */
+.lc-congrats {
+  padding: 16px 14px; border-radius: 16px; text-align: center;
+  border: 1.5px solid var(--lc-accent); background: color-mix(in srgb, var(--lc-accent) 12%, transparent);
+  color: var(--lc-accent);
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  font-size: 1.3rem; line-height: 1.2;
+}
+.lc--art .lc-congrats {
+  position: absolute; left: 7%; right: 7%; top: 45%; padding: 3cqw;
+  background: rgba(255,251,244,.94);
+  font-size: 6.2cqw;
+}

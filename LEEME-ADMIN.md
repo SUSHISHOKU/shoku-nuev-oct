@@ -80,7 +80,9 @@ cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actua
 | Agregar promociones y configurar los mensajes automáticos | **Promociones y mensajes**. |
 
 - Al registrarse, el cliente recibe los **sellos de regalo** configurados (por defecto 1 de 4).
-- Cada vez que se completan los sellos, la tarjeta vuelve a 0, su vigencia se reinicia y se acumula una recompensa.
+- Al completar los sellos, la tarjeta muestra la felicitación en lugar de los sellos y gana la recompensa. Por defecto se retira al terminar el día siguiente (se configura en **Diseño de la tarjeta**).
+- Al retirarse se borra del sistema y el cliente puede registrarse otra vez con el mismo teléfono. Su teléfono y cuántos pases ha completado quedan en **💬 Retroalimentación**.
+- Apple y Google no permiten borrar una tarjeta del teléfono de un cliente: queda anulada, fuera de las tarjetas activas, y la persona la puede quitar.
 - Una tarjeta **vencida** no recibe sellos ni canjea recompensas hasta que se renueve; al renovar empieza de nuevo.
 - Sellos, regalo, vigencia, recompensa, textos e ilustración se cambian en **Diseño de la tarjeta**.
 - Si das dos sellos al mismo cliente en menos de 3 horas, el panel te pide confirmar.
@@ -88,8 +90,15 @@ cumpleaños y correo y obtiene su tarjeta con un código QR. La tarjeta se actua
 - **Apple Wallet / Google Wallet:** el cliente agrega la tarjeta desde Membresía. Los sellos y avisos se actualizan solos
   gracias a las funciones de la carpeta `functions/`. Las llaves privadas viven como secretos de Firebase, nunca en el repositorio.
 
-Los avisos por cercanía funcionan dentro del radio que deciden Apple y Google (≈100 m en iPhone);
-no es posible un radio de 5–10 km con tarjetas de Wallet.
+Las ubicaciones de cada sucursal se configuran en **📍 Sucursales** (hasta 10). Los avisos por cercanía funcionan dentro
+del radio que deciden Apple y Google (≈100 m en iPhone), no ocurren siempre y no es posible un radio de 5–10 km con
+tarjetas de Wallet.
+
+### Clave para el mapa de Google
+1. En <https://console.cloud.google.com> (proyecto **shoku-4696b**), activa **Maps JavaScript API** y **Geocoding API**.
+2. En **APIs y servicios → Credenciales**, crea una **clave de API**.
+3. Restríngela: sitios web `https://shokusushi.com/*` y solo esas dos API.
+4. Pégala en el panel, en **📍 Sucursales**, y presiona **Publicar cambios**.
 
 ## Instalar el panel como app
 
@@ -100,6 +109,8 @@ no es posible un radio de 5–10 km con tarjetas de Wallet.
 Necesita internet para funcionar, porque los datos viven en Firebase.
 
 ## Personal, notificaciones y estrategias
+
+- **Retroalimentación:** lista de teléfonos con los pases completados. **💬 Abrir WhatsApp** abre cada chat con tu mensaje listo y tú lo envías; en computadora usa WhatsApp Web, que se enlaza escaneando su QR. No hay envío masivo automático: los programas que lo hacen con ese QR van contra las reglas de WhatsApp y pueden hacer que bloqueen tu número. Si alguien pide no recibir mensajes, desmarca su casilla.
 
 - **Personal y permisos** (solo el dueño): crea un usuario por mesero y elige qué puede hacer. Por defecto
   solo registra visitas, ve los datos del comensal y entrega recompensas. Para cambiar una contraseña olvidada,

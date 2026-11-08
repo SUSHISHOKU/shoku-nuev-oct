@@ -4,7 +4,7 @@ import {
   serverTimestamp, Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { db, resolveMedia } from './firebase.js';
-import { renderCard, hydrateCard, normalizePhone, firstName, fillMessage, welcomeOf, totalStamps, computeExpiry, isExpired, fmtExpiry } from './loyalty-card.js';
+import { renderCard, hydrateCard, normalizePhone, firstName, fillMessage, welcomeOf, totalStamps, computeExpiry, isExpired, fmtExpiry, retireDate } from './loyalty-card.js';
 import { safeUrl } from './util.js';
 
 const resolveSrc = (src) => Promise.resolve(src?.startsWith('media:') ? resolveMedia(src) : safeUrl(src));
@@ -62,6 +62,7 @@ export function createLoyalty(ctx) {
   async function addStamp() {
     const loy = ctx.getLoy();
     const required = totalStamps(loy.card);
+    if (selected.data.completedAt) { toast('Esta tarjeta ya está completa.', 'error'); return; }
     if (isExpired(toDate(selected.data.expiresAt))) { toast('La tarjeta está vencida. Renuévala para seguir sumando sellos.', 'error'); return; }
     const last = toDate(selected.data.lastVisit);
     if (last && Date.now() - last.getTime() < 3 * 3600 * 1000 &&
@@ -74,20 +75,25 @@ export function createLoyalty(ctx) {
       let completed = false;
       let available = cur.rewardsAvailable || 0;
       let earned = cur.rewardsEarned || 0;
-      if (stamps >= required) { stamps -= required; available += 1; earned += 1; completed = true; }
+      if (stamps >= required) { stamps = required; available += 1; earned += 1; completed = true; }
       const now = serverTimestamp();
-      // La vigencia se reinicia al completar la tarjeta, o en cada visita si así está configurado.
+      // Al completarse, la tarjeta muestra la felicitación y se retira al terminar el plazo configurado.
+      // Si no, su vigencia sigue igual o se renueva en cada visita, según la configuración.
       let expiresAt = cur.expiresAt ?? null;
-      if (completed || loy.card.validityFrom === 'visit') {
+      const finish = {};
+      if (completed) {
+        expiresAt = Timestamp.fromDate(retireDate(loy.card));
+        Object.assign(finish, { completedAt: now, deleteAt: expiresAt });
+      } else if (loy.card.validityFrom === 'visit') {
         const next = computeExpiry(loy.card);
         expiresAt = next ? Timestamp.fromDate(next) : null;
       }
-      tx.update(ref, { stamps, visits: (cur.visits || 0) + 1, rewardsAvailable: available, rewardsEarned: earned, lastVisit: now, expiresAt });
-      tx.update(doc(db, 'cards', id), { stamps, rewardsAvailable: available, updatedAt: now, expiresAt, lastVisit: now });
+      tx.update(ref, { stamps, visits: (cur.visits || 0) + 1, rewardsAvailable: available, rewardsEarned: earned, lastVisit: now, expiresAt, ...finish });
+      tx.update(doc(db, 'cards', id), { stamps, rewardsAvailable: available, updatedAt: now, expiresAt, lastVisit: now, ...finish });
       logMovement(tx, id, { cardId: id, name: cur.name, type: 'sello', stampsAfter: stamps, completed, at: now, by: ctx.userEmail() });
       return { completed, stamps };
     });
-    toast(result.completed ? `🎉 ¡Tarjeta completa! ${selected.data.name} ganó: ${loy.card.rewardText}` : `Sello agregado (${result.stamps}/${required}).`, 'ok');
+    toast(result.completed ? `🎉 ¡Tarjeta completa! ${selected.data.name} ganó: ${loy.card.rewardText}. Se retirará en ${loy.card.completedDays} día(s).` : `Sello agregado (${result.stamps}/${required}).`, 'ok');
     customers = null;
     await openCustomer(id);
   }
@@ -267,10 +273,12 @@ export function createLoyalty(ctx) {
       const c = selected.data;
       const required = totalStamps(loy.card);
       const expiresAt = toDate(c.expiresAt);
-      const expired = isExpired(expiresAt);
+      const completedCard = !!c.completedAt;
+      const deleteAt = toDate(c.deleteAt);
+      const expired = !completedCard && isExpired(expiresAt);
       out.push(h('section', { class: 'card loy-customer' },
         h('div', { class: 'loy-customer__grid' },
-          cardBox(loy, { name: firstName(c.name), stamps: c.stamps, rewards: c.rewardsAvailable, expiresAt }),
+          cardBox(loy, { name: firstName(c.name), stamps: c.stamps, rewards: c.rewardsAvailable, expiresAt, completed: completedCard, deleteAt }),
           h('div', {},
             h('h3', { class: 'loy-name', text: c.name }),
             h('dl', { class: 'loy-dl' },
@@ -281,14 +289,14 @@ export function createLoyalty(ctx) {
               h('dt', { text: 'Visitas totales' }), h('dd', { text: String(c.visits || 0) }),
               h('dt', { text: 'Recompensas' }), h('dd', { text: `${c.rewardsAvailable || 0} por canjear · ${c.rewardsRedeemed || 0} canjeadas` }),
               h('dt', { text: 'Última visita' }), h('dd', { text: fmtDateTime(toDate(c.lastVisit)) }),
-              h('dt', { text: expired ? 'Venció' : 'Vence' }), h('dd', { class: expired ? 'is-danger' : '', text: fmtExpiry(expiresAt) }),
+              h('dt', { text: completedCard ? 'Se retira' : expired ? 'Venció' : 'Vence' }), h('dd', { class: expired ? 'is-danger' : '', text: fmtExpiry(completedCard ? deleteAt : expiresAt) }),
               h('dt', { text: 'Registro' }), h('dd', { text: fmtDate(toDate(c.createdAt)) })),
             h('div', { class: 'row', style: 'margin-top:16px' },
               expired && can('visits') ? h('button', { type: 'button', class: 'btn btn--primary btn--big', onclick: () => renew().catch((e) => toast(e.message, 'error')) }, 'Renovar tarjeta') : null,
-              !expired && can('visits') ? h('button', { type: 'button', class: 'btn btn--primary btn--big', onclick: () => addStamp().catch((e) => toast(e.message, 'error')) }, '+1 sello') : null,
+              !expired && !completedCard && can('visits') ? h('button', { type: 'button', class: 'btn btn--primary btn--big', onclick: () => addStamp().catch((e) => toast(e.message, 'error')) }, '+1 sello') : null,
               !expired && can('redeem') && c.rewardsAvailable > 0 ? h('button', { type: 'button', class: 'btn btn--big btn--reward', onclick: () => redeem().catch(() => {}) }, '🎁 Entregar recompensa') : null),
             h('div', { class: 'row', style: 'margin-top:10px' },
-              can('customers') ? h('button', { type: 'button', class: 'btn btn--sm btn--ghost', onclick: () => adjustStamps().catch((e) => toast(e.message, 'error')) }, 'Corregir sellos') : null,
+              can('customers') && !completedCard ? h('button', { type: 'button', class: 'btn btn--sm btn--ghost', onclick: () => adjustStamps().catch((e) => toast(e.message, 'error')) }, 'Corregir sellos') : null,
               h('button', {
                 type: 'button', class: 'btn btn--sm btn--ghost',
                 onclick: async () => {
@@ -478,6 +486,13 @@ export function createLoyalty(ctx) {
               field('Nombre del programa', bound(loy, 'programName', live)),
               field('Frase principal (usa {sellos} y {recompensa})', bound(c, 'headline', live)),
               field('Recompensa al completar', bound(c, 'rewardText', live)),
+              field('Mensaje al completar (usa {recompensa})', bound(c, 'completedMessage', live)),
+              h('label', { class: 'field' }, h('span', { text: 'Días antes de retirar la tarjeta completa' }),
+                h('input', { type: 'number', min: 0, max: 30, value: c.completedDays ?? 1, oninput: (e) => {
+                  const n = Math.round(Number(e.target.value));
+                  if (n >= 0 && n <= 30) { c.completedDays = n; changed(); }
+                } }),
+                h('small', { text: '1 = se retira al terminar el día siguiente. 0 = al terminar el mismo día.' })),
               h('label', { class: 'field' }, h('span', { text: 'Sellos para completar' }),
                 h('input', { type: 'number', min: 1, max: 20, value: c.stampsRequired, oninput: (e) => {
                   const n = Math.round(Number(e.target.value));
@@ -529,20 +544,11 @@ export function createLoyalty(ctx) {
     const loy = ctx.getLoy();
     const n = loy.notifications;
     const vars = 'Variables: {nombre} · {faltan} · {recompensa} · {promo}';
-    const sample = (tpl) => fillMessage(tpl, { nombre: 'Ana', faltan: 5, recompensa: loy.card.rewardText, promo: loy.promotions.find((p) => p.active)?.title || 'nuestras promociones' });
+    const sample = (tpl) => fillMessage(tpl, { sucursal: (loy.branches || [])[0]?.name || 'Centro', nombre: 'Ana', faltan: 5, recompensa: loy.card.rewardText, promo: loy.promotions.find((p) => p.active)?.title || 'nuestras promociones' });
     const msg = (obj, key, label) => {
       const out = h('small', { class: 'msg-preview', text: `Vista previa: ${sample(obj[key])}` });
       return h('div', { class: 'field' }, h('span', { text: label }),
         bound(obj, key, { multiline: true, onChange: () => { out.textContent = `Vista previa: ${sample(obj[key])}`; } }), out);
-    };
-    const geo = () => {
-      if (!navigator.geolocation) return toast('Este navegador no da la ubicación.', 'error');
-      navigator.geolocation.getCurrentPosition((p) => {
-        n.location.lat = p.coords.latitude.toFixed(6);
-        n.location.lng = p.coords.longitude.toFixed(6);
-        changed(); render();
-        toast('Ubicación del negocio guardada (recuerda publicar).', 'ok');
-      }, () => toast('No se pudo obtener la ubicación. Escríbela a mano.', 'error'), { enableHighAccuracy: true });
     };
 
     return [
@@ -580,14 +586,8 @@ export function createLoyalty(ctx) {
         h('div', { class: 'card__head' }, h('h3', { text: 'Cumpleaños' }), toggle(n.birthday, 'enabled', 'Activo')),
         msg(n.birthday, 'message', 'Mensaje el día de su cumpleaños')),
       h('section', { class: 'card' },
-        h('div', { class: 'card__head' }, h('h3', { text: 'Cerca del negocio' }), toggle(n.location, 'enabled', 'Activo')),
-        h('p', { class: 'muted', style: 'margin-bottom:12px;line-height:1.5', text: 'El Wallet muestra este mensaje en la pantalla bloqueada cuando el cliente pasa cerca del restaurante. Apple y Google deciden la distancia exacta (aprox. 100 m en iPhone); no es posible configurar 5 o 10 km en una tarjeta de Wallet.' }),
-        h('div', { class: 'grid grid--2' },
-          field('Latitud', bound(n.location, 'lat', { placeholder: '25.5428' })),
-          field('Longitud', bound(n.location, 'lng', { placeholder: '-103.4068' }))),
-        h('div', { class: 'row', style: 'margin:10px 0 14px' },
-          h('button', { type: 'button', class: 'btn btn--sm', onclick: geo }, '📍 Usar mi ubicación actual (estando en el negocio)'),
-          n.location.lat && n.location.lng ? h('a', { class: 'btn btn--sm btn--ghost', target: '_blank', rel: 'noopener', href: `https://www.google.com/maps?q=${encodeURIComponent(`${n.location.lat},${n.location.lng}`)}` }, 'Ver en el mapa') : null),
+        h('div', { class: 'card__head' }, h('h3', { text: 'Cerca de una sucursal' }), toggle(n.location, 'enabled', 'Activo')),
+        h('p', { class: 'muted', style: 'margin-bottom:12px;line-height:1.5', text: 'Las ubicaciones se configuran en 📍 Sucursales. Usa {sucursal} para incluir el nombre de cada una.' }),
         msg(n.location, 'message', 'Mensaje')),
       h('section', { class: 'card' },
         h('div', { class: 'card__head' }, h('h3', { text: 'Botones de Wallet en la página de Membresía' })),

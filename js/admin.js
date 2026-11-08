@@ -6,6 +6,8 @@ import { safeUrl, formatPrice, normalizeData, slugify, deepMerge } from './util.
 import { DEFAULT_LOYALTY } from './loyalty-card.js';
 import { createLoyalty } from './admin-loyalty.js';
 import { createTeam } from './admin-team.js';
+import { createBranches } from './admin-branches.js';
+import { createFeedback } from './admin-feedback.js';
 
 const auth = getAuth(app);
 if (USE_EMULATOR) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
@@ -27,6 +29,8 @@ let loy = null; // configuración de la tarjeta de fidelidad (site/loyalty)
 let savedLoyJSON = '';
 let loyalty = null;
 let team = null;
+let branches = null;
+let feedback = null;
 // Sesión actual: el dueño puede todo; el personal, solo lo que tenga permitido.
 let session = { owner: false, name: '', perms: {} };
 const can = (perm) => session.owner || session.perms[perm] === true;
@@ -143,7 +147,7 @@ async function loadData() {
 function firstView() {
   if (can('menu')) return { type: 'section', id: data.sections[0]?.id };
   if (can('visits') || can('redeem')) return { type: 'loy-visit' };
-  for (const [perm, type] of [['customers', 'loy-customers'], ['reports', 'loy-reports'], ['notify', 'loy-notify'], ['card', 'loy-design'], ['ai', 'loy-ai']]) {
+  for (const [perm, type] of [['customers', 'loy-customers'], ['reports', 'loy-reports'], ['notify', 'loy-notify'], ['feedback', 'loy-feedback'], ['card', 'loy-design'], ['ai', 'loy-ai']]) {
     if (can(perm)) return { type };
   }
   return { type: 'none' };
@@ -153,7 +157,7 @@ function firstView() {
 function applyPermissions() {
   document.querySelectorAll('[data-perm]').forEach((el) => {
     const p = el.dataset.perm;
-    const ok = p === 'owner' ? session.owner : p === 'owner-or-admin' ? (session.owner || can('ai') || can('notify')) : p === 'visits' ? (can('visits') || can('redeem')) : can(p);
+    const ok = p === 'owner' ? session.owner : p === 'owner-or-admin' ? (session.owner || can('ai') || can('notify') || can('feedback')) : p === 'visits' ? (can('visits') || can('redeem')) : can(p);
     el.hidden = !ok;
   });
   $('#publish-btn').hidden = !(can('menu') || can('card'));
@@ -371,6 +375,8 @@ function render() {
   else if (view.type === 'backup') content = renderBackup();
   else if (view.type === 'none') content = h('p', { class: 'empty', text: 'Tu usuario no tiene permisos asignados. Pídele al dueño que te los active.' });
   else if (view.type === 'loy-staff') content = team.renderStaff();
+  else if (view.type === 'loy-branches') content = branches.renderBranches();
+  else if (view.type === 'loy-feedback') content = feedback.renderFeedback();
   else if (view.type === 'loy-ai') content = team.renderAI();
   else if (view.type === 'loy-notify') content = team.renderNotify();
   else if (view.type.startsWith('loy-')) content = loyalty.renderView(view);
@@ -713,6 +719,8 @@ loyalty = createLoyalty({
   isOwner: () => session.owner,
   userEmail: () => session.name || auth.currentUser?.email || ''
 });
+branches = createBranches({ h, field, bound, toggle, iconBtn, toast, changed, render, getLoy: () => loy });
+feedback = createFeedback({ h, field, bound, toast, render, changed, loyalty, getLoy: () => loy, can, isOwner: () => session.owner });
 team = createTeam({ h, field, toast, render, loyalty, getMenu: () => data, getLoy: () => loy, can, app, userEmail: () => session.name || auth.currentUser?.email || '' });
 
 // Determina si quien entró es el dueño o personal activo; a cualquier otra cuenta se le cierra la sesión.

@@ -264,3 +264,19 @@ select { color-scheme: dark; }
 .install-steps { margin: 0 0 16px 20px; line-height: 1.9; }
 @media (max-width: 860px) { .sidebar { padding-top: max(16px, env(safe-area-inset-top)); } }
 @media (display-mode: standalone) { #install-app, #install-app-login { display: none !important; } }
+
+/* ==================== Sucursales ==================== */
+.map-box { height: min(52vh, 460px); min-height: 280px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #111114; }
+.branch { border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 12px; background: #131316; }
+.branch.is-on { border-color: var(--gold); }
+.branch__head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.branch__pick { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; text-align: left; flex: 1; min-width: 180px; }
+.branch__num { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #c8202b; color: #fff; font-weight: 600; font-size: .85rem; }
+.branch__pick small { color: var(--muted); font-size: .75rem; }
+.branch.is-missing .branch__pick small { color: var(--gold); }
+
+/* ==================== Retroalimentación ==================== */
+.wa-next { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; padding: 14px; border-radius: 14px; background: #131316; border: 1px solid var(--line); }
+.wa-next small { display: block; color: var(--muted); font-size: .75rem; margin-bottom: 2px; }
+.wa-next strong { display: block; font-size: 1.05rem; }
+.wa-next span { color: var(--muted); font-size: .88rem; }

@@ -14,6 +14,7 @@ export const PERMS = [
   { key: 'customers', label: 'Ver todos los clientes', hint: 'Lista completa, búsqueda por nombre y descarga a Excel' },
   { key: 'reports', label: 'Ver reportes', hint: 'Visitas, cumpleaños, frecuentes e inactivos' },
   { key: 'notify', label: 'Enviar notificaciones', hint: 'Mandar avisos a quienes tienen la tarjeta' },
+  { key: 'feedback', label: 'Retroalimentación', hint: 'Ver todos los teléfonos e invitar a regresar por WhatsApp' },
   { key: 'card', label: 'Editar la tarjeta', hint: 'Diseño, sellos, recompensa, promociones y mensajes' },
   { key: 'menu', label: 'Editar el menú y el sitio', hint: 'Platillos, precios, fotos, enlaces y apariencia' },
   { key: 'ai', label: 'Estrategias con IA', hint: 'Ver el diagnóstico y generar estrategias' }

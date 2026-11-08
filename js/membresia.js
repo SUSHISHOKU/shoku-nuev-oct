@@ -154,7 +154,7 @@ $('#signup-form').addEventListener('submit', async (e) => {
     const expiresAt = expiry ? Timestamp.fromDate(expiry) : null;
     const batch = writeBatch(db);
     batch.set(doc(db, 'customers', id), {
-      name, phone, birthday, email, consent: true, source: 'membresia',
+      name, phone, birthday, email, consent: true, whatsappOk: f.whatsapp.checked, source: 'membresia',
       stamps, welcomeStamps: stamps, visits: 0, rewardsAvailable: 0, rewardsEarned: 0, rewardsRedeemed: 0,
       lastVisit: null, expiresAt, createdAt: serverTimestamp()
     });
@@ -209,7 +209,7 @@ async function showCard(id, isNew = false) {
   unsubscribe = onSnapshot(doc(db, 'cards', id), (snap) => {
     if (!snap.exists()) {
       store.set(null);
-      toast('No encontramos esa tarjeta.');
+      toast('Esta tarjeta ya terminó. Crea una nueva para seguir juntando sellos.');
       history.replaceState(null, '', location.pathname);
       return showSignup();
     }
@@ -217,7 +217,7 @@ async function showCard(id, isNew = false) {
     currentCard = c;
     paintNotices();
     const expiresAt = c.expiresAt?.toDate?.() || null;
-    paintCard({ name: c.firstName, stamps: c.stamps, rewards: c.rewardsAvailable, qr, code, expiresAt });
+    paintCard({ name: c.firstName, stamps: c.stamps, rewards: c.rewardsAvailable, qr, code, expiresAt, completed: !!c.completedAt, deleteAt: c.deleteAt?.toDate?.() || null });
     if (isExpired(expiresAt)) $('#wallet-note').textContent = 'Tu tarjeta venció. Pasa a caja y la renovamos.';
   }, () => toast('Sin conexión: mostrando tu tarjeta guardada.'));
   watchNotices();

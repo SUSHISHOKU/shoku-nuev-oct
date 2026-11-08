@@ -25,23 +25,28 @@ export const DEFAULT_LOYALTY = {
     validityMonths: 1, // 0 = no vence
     validityFrom: 'signup', // signup: desde el registro | visit: desde la última visita
     rewardText: '30% de descuento',
+    completedMessage: '¡Felicidades! Obtuviste tu {recompensa}',
+    completedDays: 1, // días que sigue viva la tarjeta después de completarse
     headline: 'Junta {sellos} sellos y llévate {recompensa}'
   },
   terms: 'Un sello por visita con consumo. La recompensa no es acumulable con otras promociones y no aplica en días festivos.',
-  privacy: 'Usaremos tus datos solo para administrar tu tarjeta de fidelidad y enviarte promociones de Shoku. Puedes pedir que los eliminemos en cualquier momento.',
+  privacy: 'Usaremos tus datos para administrar tu tarjeta de fidelidad y enviarte promociones de Shoku. Conservamos tu teléfono y tu historial de tarjetas aunque termines una, para invitarte a regresar. Puedes pedir que los eliminemos en cualquier momento.',
   promotions: [
     { id: 'p1', title: 'Sushi al 2x1', desc: 'Lunes, martes y miércoles en rollos seleccionados.', active: true, until: '' }
   ],
   notifications: {
     stamp: '¡Sumaste un sello, {nombre}! Te faltan {faltan} para tu recompensa.',
-    reward: '🎉 ¡Completaste tu tarjeta! Tu recompensa: {recompensa}.',
+    reward: '🎉 ¡Felicidades, {nombre}! Obtuviste tu {recompensa}. Úsalo antes de que tu tarjeta se retire.',
     inactivity: [
       { enabled: true, days: 7, message: 'Hey {nombre}, ¡te extrañamos! 🍣 Ven a Shoku, te esperamos con {promo}.' },
       { enabled: true, days: 14, message: '{nombre}, tu próximo sello te espera. Visítanos esta semana y aprovecha {promo}.' }
     ],
     birthday: { enabled: true, message: '¡Feliz cumpleaños, {nombre}! 🎂 Ven a celebrar a Shoku, tenemos una sorpresa para ti.' },
-    location: { enabled: true, lat: '', lng: '', message: 'Estás cerca de Shoku 🍣 ¡Ven y disfruta un sushi!' }
+    location: { enabled: true, lat: '', lng: '', message: 'Estás cerca de Shoku {sucursal} 🍣 ¡Ven y disfruta un sushi!' }
   },
+  feedbackMessage: '¡Hola {nombre}! Te extrañamos en Shoku 🍣 Regresa y pide tu nueva tarjeta de sellos. ¡Te esperamos!',
+  mapsKey: '',
+  branches: [], // { id, name, address, lat, lng, active, message }
   wallet: { appleOff: false, googleOff: false }
 };
 
@@ -81,11 +86,20 @@ export const computeExpiry = (c, from = new Date()) => {
   const months = Math.round(Number(c.validityMonths)) || 0;
   return months > 0 ? addMonths(from, months) : null;
 };
+// Fin del día en que se retira una tarjeta completada: el cliente tiene el resto de hoy y los días configurados.
+export function retireDate(c, from = new Date()) {
+  const days = Math.max(0, Math.round(Number(c.completedDays)));
+  const d = new Date(from);
+  d.setDate(d.getDate() + (Number.isFinite(days) ? days : 1));
+  d.setHours(23, 59, 59, 0);
+  return d;
+}
+export const completedText = (c) => fillMessage(c.completedMessage || '¡Felicidades! Obtuviste tu {recompensa}', { recompensa: c.rewardText || '' });
 export const isExpired = (date) => !!date && date.getTime() < Date.now();
 export const fmtExpiry = (date) => (date ? date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sin vencimiento');
 export const headlineText = (cfg) => fillMessage(cfg.card?.headline, { sellos: totalStamps(cfg.card || {}), recompensa: cfg.card?.rewardText || '' });
 
-// Devuelve el HTML de la tarjeta. state = { name, stamps, rewards, qr (svg), code, expiresAt (Date) }
+// Devuelve el HTML de la tarjeta. state = { name, stamps, rewards, qr (svg), code, expiresAt (Date), completed (bool), deleteAt (Date) }
 export function renderCard(cfg, state = {}) {
   const c = { ...DEFAULT_LOYALTY.card, ...(cfg.card || {}) };
   const total = totalStamps(c);
@@ -95,15 +109,21 @@ export function renderCard(cfg, state = {}) {
   const stamps = Array.from({ length: total }, (_, i) =>
     `<span class="lc-stamp${i < have ? ' is-on' : ''}">${i < have ? icon : `<b>${i + 1}</b>`}</span>`).join('');
   const style = [`--lc-bg:${c.bg}`, `--lc-fg:${c.fg}`, `--lc-label:${c.label}`, `--lc-accent:${c.accent}`].join(';');
-  const expired = isExpired(state.expiresAt);
-  const showExpiry = Number(c.validityMonths) > 0 || state.expiresAt;
+  const completed = !!state.completed;
+  const expired = !completed && isExpired(state.expiresAt);
+  const showExpiry = Number(c.validityMonths) > 0 || state.expiresAt || completed;
+  const congrats = `<div class="lc-congrats"><strong>${esc(completedText(c))}</strong></div>`;
   const banner = expired
     ? '<div class="lc-reward lc-reward--off">Tarjeta vencida · pasa a caja para renovarla</div>'
-    : state.rewards > 0
+    : completed
+      ? (state.rewards > 0
+        ? '<div class="lc-reward">🎁 Muestra esta tarjeta en caja para usar tu recompensa</div>'
+        : '<div class="lc-reward lc-reward--off">✅ Recompensa entregada. ¡Gracias por tu preferencia!</div>')
+      : state.rewards > 0
       ? `<div class="lc-reward">🎁 ${state.rewards > 1 ? `${state.rewards} recompensas listas` : 'Recompensa lista'} · ${esc(c.rewardText)}</div>`
       : '';
   const expiryField = showExpiry
-    ? `<div class="lc-field lc-field--right"><span>${expired ? 'VENCIÓ' : 'VENCE'}</span><strong>${esc(fmtExpiry(state.expiresAt || computeExpiry(c)))}</strong></div>`
+    ? `<div class="lc-field lc-field--right"><span>${completed ? 'SE RETIRA' : expired ? 'VENCIÓ' : 'VENCE'}</span><strong>${esc(fmtExpiry(completed ? state.deleteAt : state.expiresAt || computeExpiry(c)))}</strong></div>`
     : '';
   const qr = state.qr || state.code ? `<footer class="lc-qr">
         <div class="lc-qr__box">${state.qr || '<div class="lc-qr__ph"></div>'}</div>
@@ -116,7 +136,7 @@ export function renderCard(cfg, state = {}) {
       <div class="lca-art" data-art="${esc(c.artImage || '')}">
         ${c.logo ? `<img class="lca-logo" alt="" data-src="${esc(c.logo)}">` : ''}
         ${c.title ? `<h3 class="lca-title">${esc(c.title)}</h3>` : ''}
-        <div class="lca-stamps" style="--cols:${cols}">${stamps}</div>
+        ${completed ? congrats : `<div class="lca-stamps" style="--cols:${cols}">${stamps}</div>`}
         ${c.subtitle ? `<p class="lca-sub"><span>${esc(c.subtitle)}</span></p>` : ''}
       </div>
       <div class="lca-stub">
@@ -141,7 +161,7 @@ export function renderCard(cfg, state = {}) {
         <div class="lc-field lc-field--right"><span>SELLOS</span><strong>${have} / ${total}</strong></div>
       </header>
       <p class="lc-program">${esc(cfg.programName || '')}</p>
-      <div class="lc-strip" style="--cols:${cols}">${stamps}</div>
+      ${completed ? congrats : `<div class="lc-strip" style="--cols:${cols}">${stamps}</div>`}
       ${banner}
       <div class="lc-fields">
         <div class="lc-field"><span>MIEMBRO</span><strong>${esc(state.name || 'Tu nombre')}</strong></div>
@@ -177,6 +197,22 @@ export async function qrSvg(text) {
 // Texto de notificación con variables: {nombre}, {faltan}, {recompensa}, {promo}
 export function fillMessage(tpl, vars) {
   return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
+}
+
+// Sucursales con ubicación válida que van en las tarjetas (Apple y Google aceptan hasta 10).
+export function activeBranches(cfg) {
+  const loc = cfg.notifications?.location;
+  if (loc && loc.enabled === false) return [];
+  const list = Array.isArray(cfg.branches) ? cfg.branches : [];
+  return list
+    .filter((b) => b.active !== false && b.lat !== '' && b.lng !== '' && Number.isFinite(Number(b.lat)) && Number.isFinite(Number(b.lng)))
+    .slice(0, 10)
+    .map((b) => ({
+      name: b.name || '',
+      latitude: Number(b.lat),
+      longitude: Number(b.lng),
+      message: fillMessage(b.message || loc?.message || '', { sucursal: b.name || '' }).replace(/\s+/g, ' ').trim()
+    }));
 }
 
 export const normalizePhone = (p) => String(p || '').replace(/\D/g, '').slice(-10);
