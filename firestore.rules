@@ -47,7 +47,16 @@ service cloud.firestore {
       allow read: if true;
       allow write: if (docId == 'menu' && can('menu')
           && request.resource.data.sections is list && request.resource.data.settings is map)
-        || (docId == 'loyalty' && can('card') && request.resource.data.card is map);
+        || (docId == 'loyalty' && can('card') && request.resource.data.card is map)
+        || (docId == 'branches' && can('menu') && request.resource.data.names is map);
+    }
+
+    // Menú propio de cada sucursal (menus/milenio, menus/tec, ...). Si no existe, se muestra el General.
+    match /menus/{branchId} {
+      allow read: if true;
+      allow write: if can('menu')
+        && branchId in ['milenio', 'tec', 'independencia', 'matamoros', 'gomez', 'centrito', 'menu7']
+        && request.resource.data.sections is list && request.resource.data.settings is map;
     }
 
     // Fotos subidas desde el panel cuando Firebase Storage no está activo.

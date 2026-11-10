@@ -8,6 +8,8 @@ import { createLoyalty } from './admin-loyalty.js';
 import { createTeam } from './admin-team.js';
 import { createBranches } from './admin-branches.js';
 import { createFeedback } from './admin-feedback.js';
+import { createMenus } from './admin-menus.js';
+import { BRANCH_MENUS, menuDocPath, branchName } from './branches.js';
 
 const auth = getAuth(app);
 if (USE_EMULATOR) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
@@ -31,6 +33,10 @@ let loyalty = null;
 let team = null;
 let branches = null;
 let feedback = null;
+let menus = null;
+// Menú que se está editando ("general" o una sucursal) y nombres personalizados de las sucursales.
+let currentMenu = 'general';
+let branchNames = {};
 // Sesión actual: el dueño puede todo; el personal, solo lo que tenga permitido.
 let session = { owner: false, name: '', perms: {} };
 const can = (perm) => session.owner || session.perms[perm] === true;
@@ -111,12 +117,17 @@ function changed() {
   st.textContent = dirty ? 'Cambios sin publicar' : (meta.updatedAt ? 'Publicado' : 'Sin publicar');
 }
 
-async function loadData() {
-  $('#editor').replaceChildren(h('p', { class: 'empty', text: 'Cargando menú…' }));
+// Carga el menú de una sucursal. Si aún no tiene uno propio, empieza como copia del General.
+async function loadMenu(id) {
   let remote = null;
+  let fallback = null;
   try {
-    const snap = await getDoc(doc(db, ...MENU_DOC));
+    const snap = await getDoc(doc(db, ...menuDocPath(id)));
     remote = snap.exists() ? snap.data() : null;
+    if (!remote && id !== 'general') {
+      const general = await getDoc(doc(db, ...MENU_DOC));
+      fallback = general.exists() ? general.data() : null;
+    }
   } catch (err) {
     toast(`No se pudo leer Firebase: ${err.message}`, 'error');
   }
@@ -125,9 +136,35 @@ async function loadData() {
     meta = { updatedAt: remote.updatedAt?.toDate?.(), updatedBy: remote.updatedBy };
     delete remote.updatedAt; delete remote.updatedBy;
   }
-  data = normalizeData(DEFAULT_DATA, remote);
+  if (fallback) { delete fallback.updatedAt; delete fallback.updatedBy; }
+  data = normalizeData(DEFAULT_DATA, remote || fallback);
   savedJSON = remote || !can('menu') ? JSON.stringify(data) : '';
   meta.isNew = !remote;
+  currentMenu = id;
+  renderMenuPicker();
+}
+
+function renderMenuPicker() {
+  const sel = $('#menu-picker');
+  sel.replaceChildren(...BRANCH_MENUS.map((b) => h('option', { value: b.id, selected: b.id === currentMenu ? true : null, text: branchName(b.id, branchNames) })));
+}
+
+async function switchMenu(id) {
+  $('#editor').replaceChildren(h('p', { class: 'empty', text: 'Cargando menú…' }));
+  await loadMenu(id);
+  view = { type: 'section', id: data.sections[0]?.id };
+  render();
+  changed();
+  toast(`Editando el menú: ${branchName(id, branchNames)}`, 'ok');
+}
+
+async function loadData() {
+  $('#editor').replaceChildren(h('p', { class: 'empty', text: 'Cargando menú…' }));
+  try {
+    const names = await getDoc(doc(db, 'site', 'branches'));
+    branchNames = names.exists() ? names.data().names || {} : {};
+  } catch { branchNames = {}; }
+  await loadMenu(currentMenu);
 
   let remoteLoy = null;
   try {
@@ -177,16 +214,18 @@ async function publish() {
   try {
     const stamp = { updatedAt: serverTimestamp(), updatedBy: auth.currentUser?.email || '' };
     if (json !== savedJSON) {
-      await setDoc(doc(db, ...MENU_DOC), { ...JSON.parse(json), ...stamp });
+      await setDoc(doc(db, ...menuDocPath(currentMenu)), { ...JSON.parse(json), ...stamp });
       savedJSON = json;
     }
     if (loyJson !== savedLoyJSON) {
       await setDoc(doc(db, 'site', 'loyalty'), { ...JSON.parse(loyJson), ...stamp });
       savedLoyJSON = loyJson;
     }
+    const wasNew = meta.isNew;
     meta = { updatedAt: new Date(), updatedBy: auth.currentUser?.email, isNew: false };
-    toast('¡Cambios publicados! Ya se ven en el sitio.', 'ok');
-    if (view.type === 'backup') render();
+    toast(`¡Cambios publicados en ${branchName(currentMenu, branchNames)}! Ya se ven en su página.`, 'ok');
+    // Quita el aviso de "sin menú propio" en cuanto la sucursal ya tiene el suyo.
+    if (wasNew || view.type === 'backup') render();
   } catch (err) {
     toast(err.code === 'permission-denied'
       ? 'Firebase rechazó el guardado: revisa las reglas de Firestore (archivo firestore.rules).'
@@ -377,6 +416,7 @@ function render() {
   else if (view.type === 'loy-staff') content = team.renderStaff();
   else if (view.type === 'loy-branches') content = branches.renderBranches();
   else if (view.type === 'loy-feedback') content = feedback.renderFeedback();
+  else if (view.type === 'menus-qr') content = menus.renderMenusQr();
   else if (view.type === 'loy-ai') content = team.renderAI();
   else if (view.type === 'loy-notify') content = team.renderNotify();
   else if (view.type.startsWith('loy-')) content = loyalty.renderView(view);
@@ -424,7 +464,10 @@ function renderSection(s) {
   return [
     h('h2', { text: s.name || 'Sección' }),
     h('p', { class: 'lead', text: 'Edita nombres, precios y descripciones. Los cambios se ven en el sitio al presionar “Publicar cambios”.' }),
-    meta.isNew ? h('div', { class: 'notice', text: 'Aún no has publicado nada en Firebase: estás viendo el menú nuevo (del PDF). Presiona “Publicar cambios” una vez para guardarlo.' }) : null,
+    h('p', { class: 'editing-menu', text: `Menú: ${branchName(currentMenu, branchNames)}` }),
+    meta.isNew ? h('div', { class: 'notice', text: currentMenu === 'general'
+      ? 'Aún no has publicado nada en Firebase: estás viendo el menú nuevo (del PDF). Presiona “Publicar cambios” una vez para guardarlo.'
+      : `${branchName(currentMenu, branchNames)} todavía no tiene menú propio: lo que ves es una copia del General. Cuando presiones “Publicar cambios”, esta sucursal tendrá su propio menú.` }) : null,
 
     h('section', { class: 'card' },
       h('div', { class: 'card__head' }, h('h3', { text: 'Datos de la sección' }),
@@ -575,6 +618,22 @@ function renderLook() {
 /* ==================== Vista: respaldo ==================== */
 
 function renderBackup() {
+  const copySelect = h('select', { style: 'max-width:260px' }, BRANCH_MENUS.filter((b) => b.id !== currentMenu)
+    .map((b) => h('option', { value: b.id, text: branchName(b.id, branchNames) })));
+  const copyFrom = async () => {
+    const src = copySelect.value;
+    if (!confirm(`¿Reemplazar el menú de ${branchName(currentMenu, branchNames)} por el de ${branchName(src, branchNames)}? No se publica hasta que presiones “Publicar cambios”.`)) return;
+    try {
+      let snap = await getDoc(doc(db, ...menuDocPath(src)));
+      if (!snap.exists() && src !== 'general') snap = await getDoc(doc(db, ...MENU_DOC));
+      const copy = snap.exists() ? snap.data() : null;
+      if (copy) { delete copy.updatedAt; delete copy.updatedBy; }
+      data = normalizeData(DEFAULT_DATA, copy);
+      changed();
+      go({ type: 'section', id: data.sections[0]?.id });
+      toast(`Menú copiado de ${branchName(src, branchNames)}. Revisa y publica.`, 'ok');
+    } catch (err) { toast(err.message, 'error'); }
+  };
   const download = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = h('a', { href: URL.createObjectURL(blob), download: `shoku-menu-${new Date().toISOString().slice(0, 10)}.json` });
@@ -599,8 +658,14 @@ function renderBackup() {
     toast('Menú del PDF cargado. Presiona “Publicar cambios” para aplicarlo.', 'ok');
   };
   return [
-    h('h2', { text: 'Respaldo' }),
+    h('h2', { text: `Respaldo · ${branchName(currentMenu, branchNames)}` }),
     h('p', { class: 'lead', text: meta.updatedAt ? `Última publicación: ${meta.updatedAt.toLocaleString('es-MX')}${meta.updatedBy ? ` por ${meta.updatedBy}` : ''}.` : 'Aún no se ha publicado ninguna versión en Firebase.' }),
+    h('section', { class: 'card' },
+      h('div', { class: 'card__head' }, h('h3', { text: 'Copiar el menú de otra sucursal' })),
+      h('p', { class: 'lead', text: 'Reemplaza este menú por el de otra sucursal; después ajusta lo que cambie y publica.' }),
+      h('div', { class: 'row' },
+        copySelect,
+        h('button', { type: 'button', class: 'btn', onclick: copyFrom }, 'Copiar'))),
     h('section', { class: 'card' },
       h('div', { class: 'card__head' }, h('h3', { text: 'Copias de seguridad' })),
       h('div', { class: 'row' },
@@ -720,6 +785,22 @@ loyalty = createLoyalty({
   userEmail: () => session.name || auth.currentUser?.email || ''
 });
 branches = createBranches({ h, field, bound, toggle, iconBtn, toast, changed, render, getLoy: () => loy });
+menus = createMenus({
+  h, toast, render,
+  getNames: () => branchNames,
+  setNames: (n) => { branchNames = n; renderMenuPicker(); },
+  currentMenu: () => currentMenu,
+  switchMenu,
+  isDirty: () => menuDirty()
+});
+$('#menu-picker').addEventListener('change', async (e) => {
+  const next = e.target.value;
+  if (menuDirty() && !confirm('Tienes cambios sin publicar en este menú. ¿Cambiar de todos modos? Se perderán.')) {
+    e.target.value = currentMenu;
+    return;
+  }
+  await switchMenu(next);
+});
 feedback = createFeedback({ h, field, bound, toast, render, changed, loyalty, getLoy: () => loy, can, isOwner: () => session.owner });
 team = createTeam({ h, field, toast, render, loyalty, getMenu: () => data, getLoy: () => loy, can, app, userEmail: () => session.name || auth.currentUser?.email || '' });
 

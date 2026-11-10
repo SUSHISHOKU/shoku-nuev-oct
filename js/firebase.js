@@ -42,7 +42,16 @@ export const MENU_DOC = ['site', 'menu'];
 export const MEDIA_COLLECTION = 'media';
 export const MEDIA_PREFIX = 'media:';
 
-export async function fetchMenu() {
+// Menú de una sucursal; si todavía no tiene uno propio (o no se puede leer), el General.
+export async function fetchMenu(branch = 'general') {
+  if (branch && branch !== 'general') {
+    try {
+      const own = await getDoc(doc(db, 'menus', branch));
+      if (own.exists()) return own.data();
+    } catch (err) {
+      console.warn('[Shoku] Menú de sucursal no disponible, se usa el General:', err.code || err.message);
+    }
+  }
   const snap = await getDoc(doc(db, ...MENU_DOC));
   return snap.exists() ? snap.data() : null;
 }

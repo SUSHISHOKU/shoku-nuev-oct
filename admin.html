@@ -60,6 +60,10 @@
     <div class="layout">
       <aside class="sidebar" id="sidebar">
         <div class="whoami" id="whoami"></div>
+        <label class="menu-picker" data-perm="menu">
+          <span>Menú que estás editando</span>
+          <select id="menu-picker"></select>
+        </label>
         <button class="btn btn--block btn--sm" id="install-app" type="button" hidden>📲 Instalar la app</button>
         <label class="search" data-perm="menu">
           <span class="sr-only">Buscar platillo</span>
@@ -88,6 +92,7 @@
         <ul class="nav-list" data-perm="menu">
           <li><button type="button" data-view="home">Inicio, botones y enlaces</button></li>
           <li><button type="button" data-view="look">Apariencia y fondo</button></li>
+          <li><button type="button" data-view="menus-qr">🔗 Menús por sucursal y QR</button></li>
           <li><button type="button" data-view="backup">Respaldo</button></li>
         </ul>
       </aside>

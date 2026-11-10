@@ -66,6 +66,27 @@ lee el menú desde Firebase.
 - Si el sitio no muestra un cambio, recarga la página: el teléfono guarda una copia
   para abrir más rápido y se actualiza sola en segundos.
 
+## Menús por sucursal
+
+Hay 8 menús: el **General** (`shokusushi.com`) y uno por sucursal, cada uno con su dirección para el QR:
+
+| Sucursal | Dirección |
+| --- | --- |
+| Milenio | `shokusushi.com/menu-milenio` |
+| Tec | `shokusushi.com/menu-tec` |
+| Independencia | `shokusushi.com/menu-independencia` |
+| Matamoros | `shokusushi.com/menu-matamoros` |
+| Gómez | `shokusushi.com/menu-gomez` |
+| Centrito | `shokusushi.com/menu-centrito` |
+| Sucursal 7 (libre) | `shokusushi.com/menu7` |
+
+- En el panel, arriba a la izquierda, elige **Menú que estás editando**. Todo lo que cambies y publiques (platillos, precios,
+  fotos, botones, teléfono, video) se aplica solo a ese menú.
+- Una sucursal sin menú propio muestra el General. Al publicar su menú por primera vez, empieza como copia del General.
+- **Respaldo → Copiar el menú de otra sucursal** para partir de otro menú.
+- **🔗 Menús por sucursal y QR**: cambia los nombres (por ejemplo, el de la Sucursal 7), copia los enlaces y descarga cada QR para imprimir.
+- Si cambias `index.html`, vuelve a crear las páginas de sucursal con `node herramientas/generar-menus-sucursal.cjs`.
+
 ## Tarjeta de fidelidad (Shoku Club)
 
 El botón **MEMBRESÍA** del inicio abre `membresia.html`: el cliente escribe su nombre, teléfono,
@@ -133,6 +154,7 @@ firebase deploy --only functions:ai
 | `index.html` | Inicio con video + libro animado + menú por secciones. |
 | `admin.html` | Panel de administración (app web instalable, con `admin.webmanifest` y `admin-sw.js`). |
 | `membresia.html` | Registro de clientes y tarjeta de fidelidad digital. |
+| `menu-*.html`, `menu7.html` | Menú de cada sucursal (copias de `index.html`). |
 | `menu.html`, `meny.html` | Redirigen al menú nuevo (por si hay QR impresos con esas direcciones). |
 | `js/menu-data.js` | Menú por defecto (el del PDF). |
 | `img/` | Fotos optimizadas (WebP), ~2.5 MB en total en lugar de ~40 MB. |
